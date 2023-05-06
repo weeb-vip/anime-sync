@@ -22,6 +22,7 @@ require (
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.4.0 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect

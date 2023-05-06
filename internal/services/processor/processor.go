@@ -1,6 +1,9 @@
 package processor
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"github.com/cenkalti/backoff/v4"
+)
 
 type ProcessorFunc[T any] func(data T) error
 
@@ -34,5 +37,15 @@ func (p *Processor[T]) Process(payload string, fn ProcessorFunc[T]) error {
 	}
 
 	// do something with data
-	return fn(*data)
+
+	operation := func() error {
+		return fn(*data)
+	}
+
+	err = backoff.Retry(operation, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 10))
+	if err != nil {
+		// Handle error.
+		return err
+	}
+	return nil
 }
