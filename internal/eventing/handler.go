@@ -8,7 +8,8 @@ import (
 	"log"
 )
 
-func Eventing(cfg config.Config) error {
+func Eventing() error {
+	cfg := config.LoadConfigOrPanic()
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: cfg.PulsarConfig.URL,
 	})
