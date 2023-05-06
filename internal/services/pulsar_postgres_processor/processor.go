@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+type Options struct {
+	noErrorOnDelete bool
+}
+
 type PulsarPostgresProcessorImpl interface {
 	Process(data Payload) error
 	parseToEntity(data Schema) (*anime.Anime, error)
@@ -14,11 +18,13 @@ type PulsarPostgresProcessorImpl interface {
 
 type PulsarPostgresProcessor struct {
 	Repository anime.AnimeRepositoryImpl
+	Options    Options
 }
 
-func NewPulsarPostgresProcessor(db *db.DB) PulsarPostgresProcessorImpl {
+func NewPulsarPostgresProcessor(opt Options, db *db.DB) PulsarPostgresProcessorImpl {
 	return &PulsarPostgresProcessor{
 		Repository: anime.NewAnimeRepository(db),
+		Options:    opt,
 	}
 }
 
@@ -30,7 +36,10 @@ func (p *PulsarPostgresProcessor) Process(data Payload) error {
 		if err != nil {
 			return err
 		}
-		p.Repository.Upsert(newAnime)
+		err = p.Repository.Upsert(newAnime)
+		if err != nil {
+			return err
+		}
 	}
 
 	if data.After == nil && data.Before != nil {
@@ -40,7 +49,13 @@ func (p *PulsarPostgresProcessor) Process(data Payload) error {
 			return err
 		}
 
-		p.Repository.Delete(oldAnime)
+		err = p.Repository.Delete(oldAnime)
+		if err != nil {
+			log.Println("WARN: error deleting from db: ", err)
+			return nil
+		}
+		return nil
+
 	}
 
 	if data.Before != nil && data.After != nil {
@@ -49,7 +64,10 @@ func (p *PulsarPostgresProcessor) Process(data Payload) error {
 		if err != nil {
 			return err
 		}
-		p.Repository.Upsert(newAnime)
+		err = p.Repository.Upsert(newAnime)
+		if err != nil {
+			return err
+		}
 	}
 
 	if data.Before != nil && data.After == nil {
