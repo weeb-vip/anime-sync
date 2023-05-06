@@ -16,7 +16,10 @@ func Eventing() error {
 
 	database := db.NewDB(cfg.DBConfig)
 
-	postgresProcessor := pulsar_postgres_processor.NewPulsarPostgresProcessor(database)
+	posgresProcessorOptions := pulsar_postgres_processor.Options{
+		NoErrorOnDelete: true,
+	}
+	postgresProcessor := pulsar_postgres_processor.NewPulsarPostgresProcessor(posgresProcessorOptions, database)
 
 	messageProcessor := processor.NewProcessor[pulsar_postgres_processor.Payload]()
 

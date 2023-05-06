@@ -8,7 +8,7 @@ import (
 )
 
 type Options struct {
-	noErrorOnDelete bool
+	NoErrorOnDelete bool
 }
 
 type PulsarPostgresProcessorImpl interface {
@@ -51,8 +51,12 @@ func (p *PulsarPostgresProcessor) Process(data Payload) error {
 
 		err = p.Repository.Delete(oldAnime)
 		if err != nil {
-			log.Println("WARN: error deleting from db: ", err)
-			return nil
+			if p.Options.NoErrorOnDelete {
+				log.Println("WARN: error deleting from db: ", err)
+				return nil
+			} else {
+				return err
+			}
 		}
 		return nil
 
