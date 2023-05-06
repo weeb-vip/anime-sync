@@ -1,7 +1,6 @@
 package pulsar_postgres_processor
 
 import (
-	"database/sql"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"log"
@@ -95,7 +94,7 @@ func (p *PulsarPostgresProcessor) parseToEntity(data Schema) (*anime.Anime, erro
 		if err != nil {
 			return nil, err
 		}
-		animeStartDate = sql.NullTime{
+		animeStartDate = anime.NullTime{
 			Time:  startDate,
 			Valid: true,
 		}
