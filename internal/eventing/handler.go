@@ -35,4 +35,5 @@ func Eventing() error {
 			msg.ID(), string(msg.Payload()))
 	}
 
+	return nil
 }
