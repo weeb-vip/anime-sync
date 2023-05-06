@@ -41,8 +41,9 @@ func Eventing() error {
 			msg.ID(), string(msg.Payload()))
 
 		consumer.Ack(msg)
-		return nil
+
 	}
+	return nil
 }
 
 //
