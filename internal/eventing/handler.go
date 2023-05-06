@@ -9,6 +9,7 @@ import (
 	"github.com/weeb-vip/anime-sync/internal/services/processor"
 	"github.com/weeb-vip/anime-sync/internal/services/pulsar_postgres_processor"
 	"log"
+	"time"
 )
 
 func Eventing() error {
@@ -59,6 +60,7 @@ func Eventing() error {
 			continue
 		}
 		consumer.Ack(msg)
+		time.Sleep(200 * time.Millisecond)
 	}
 	return nil
 }
