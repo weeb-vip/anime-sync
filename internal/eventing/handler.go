@@ -6,6 +6,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/weeb-vip/anime-sync/config"
 	"log"
+	"time"
 )
 
 func Eventing() error {
@@ -41,7 +42,8 @@ func Eventing() error {
 			msg.ID(), string(msg.Payload()))
 
 		consumer.Ack(msg)
-
+		// sleep for a while before consuming next message
+		time.Sleep(100 * time.Millisecond)
 	}
 	return nil
 }
