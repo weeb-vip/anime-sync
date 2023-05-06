@@ -80,26 +80,33 @@ func (p *PulsarPostgresProcessor) parseToEntity(data Schema) (*anime.Anime, erro
 		}
 		animeEndDate = endDate
 	}
+	var record_type *anime.RECORD_TYPE
+	if data.Type != nil {
+		record := anime.RECORD_TYPE(*data.Type)
+		record_type = &record
+
+	}
+
 	newAnime.ID = data.Id
-	newAnime.Type = anime.RECORD_TYPE(*data.Type)
-	newAnime.TitleEn = *data.TitleEn
-	newAnime.TitleJp = *data.TitleJp
-	newAnime.TitleRomaji = *data.TitleRomaji
-	newAnime.TitleKanji = *data.TitleKanji
-	newAnime.TitleSynonyms = *data.TitleSynonyms
-	newAnime.ImageURL = *data.ImageUrl
-	newAnime.Synopsis = *data.Synopsis
-	newAnime.Episodes = *data.Episodes
-	newAnime.Status = *data.Status
+	newAnime.Type = record_type
+	newAnime.TitleEn = data.TitleEn
+	newAnime.TitleJp = data.TitleJp
+	newAnime.TitleRomaji = data.TitleRomaji
+	newAnime.TitleKanji = data.TitleKanji
+	newAnime.TitleSynonyms = data.TitleSynonyms
+	newAnime.ImageURL = data.ImageUrl
+	newAnime.Synopsis = data.Synopsis
+	newAnime.Episodes = data.Episodes
+	newAnime.Status = data.Status
 	newAnime.StartDate = &animeStartDate
 	newAnime.EndDate = &animeEndDate
-	newAnime.Genres = *data.Genres
-	newAnime.Duration = *data.Duration
-	newAnime.Broadcast = *data.Broadcast
-	newAnime.Source = *data.Source
-	newAnime.Licensors = *data.Licensors
-	newAnime.Studios = *data.Studios
-	newAnime.Rating = *data.Rating
+	newAnime.Genres = data.Genres
+	newAnime.Duration = data.Duration
+	newAnime.Broadcast = data.Broadcast
+	newAnime.Source = data.Source
+	newAnime.Licensors = data.Licensors
+	newAnime.Studios = data.Studios
+	newAnime.Rating = data.Rating
 	newAnime.CreatedAt = time.Now()
 	newAnime.UpdatedAt = time.Now()
 
