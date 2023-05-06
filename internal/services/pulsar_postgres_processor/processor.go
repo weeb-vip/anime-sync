@@ -86,7 +86,10 @@ func (p *PulsarPostgresProcessor) Process(data Payload) error {
 func (p *PulsarPostgresProcessor) parseToEntity(data Schema) (*anime.Anime, error) {
 	var newAnime anime.Anime
 
-	animeStartDate := sql.NullTime{}
+	animeStartDate := anime.NullTime{
+		Time:  time.Time{},
+		Valid: false,
+	}
 	if data.StartDate != nil {
 		startDate, err := time.Parse(time.RFC3339, *data.StartDate)
 		if err != nil {
@@ -131,8 +134,8 @@ func (p *PulsarPostgresProcessor) parseToEntity(data Schema) (*anime.Anime, erro
 	newAnime.Synopsis = data.Synopsis
 	newAnime.Episodes = data.Episodes
 	newAnime.Status = data.Status
-	newAnime.StartDate = &animeStartDate
-	newAnime.EndDate = &animeEndDate
+	newAnime.StartDate = animeStartDate
+	newAnime.EndDate = animeEndDate
 	newAnime.Genres = data.Genres
 	newAnime.Duration = data.Duration
 	newAnime.Broadcast = data.Broadcast
