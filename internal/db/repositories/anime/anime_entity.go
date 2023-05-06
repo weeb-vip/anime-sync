@@ -25,7 +25,7 @@ func (nt NullTime) Value() (driver.Value, error) {
 	if !nt.Valid {
 		return nil, nil
 	}
-	return nt.Time, nil
+	return nt.Time.Unix(), nil
 }
 
 type Anime struct {
