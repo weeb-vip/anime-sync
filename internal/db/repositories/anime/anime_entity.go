@@ -1,6 +1,32 @@
 package anime
 
-import "time"
+import (
+	"database/sql/driver"
+	"time"
+)
+
+type NullTime struct {
+	Time  time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (nt *NullTime) Scan(value interface{}) error {
+	if value == nil {
+		nt.Valid = false
+		return nil
+	}
+	nt.Time, nt.Valid = value.(time.Time), true
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (nt NullTime) Value() (driver.Value, error) {
+	if !nt.Valid {
+		return nil, nil
+	}
+	return nt.Time, nil
+}
 
 type Anime struct {
 	ID            string       `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -14,8 +40,8 @@ type Anime struct {
 	Synopsis      *string      `gorm:"column:synopsis;null" json:"synopsis"`
 	Episodes      *int         `gorm:"column:episodes;null" json:"episodes"`
 	Status        *string      `gorm:"column:status;null" json:"status"`
-	StartDate     *time.Time   `gorm:"column:start_date;type:timestamptz;null" json:"start_date"`
-	EndDate       *time.Time   `gorm:"column:end_date;type:timestamptz;null" json:"end_date"`
+	StartDate     NullTime     `gorm:"column:start_date;type:timestamp;null" json:"start_date"`
+	EndDate       NullTime     `gorm:"column:end_date;type:timestamp;null" json:"end_date"`
 	Genres        *string      `gorm:"column:genres;type:text;null" json:"genres"`
 	Duration      *string      `gorm:"column:duration;null" json:"duration"`
 	Broadcast     *string      `gorm:"column:broadcast;null" json:"broadcast"`
