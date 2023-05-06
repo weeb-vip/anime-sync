@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/weeb-vip/anime-sync/config"
 	"log"
 )
 
-func Eventing() error {
+func Eventing(cfg config.Config) error {
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://localhost:6650",
+		URL: cfg.PulsarConfig.URL,
 	})
 
 	defer client.Close()

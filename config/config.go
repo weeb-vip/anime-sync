@@ -3,8 +3,9 @@ package config
 import "github.com/jinzhu/configor"
 
 type Config struct {
-	AppConfig AppConfig
-	DBConfig  DBConfig
+	AppConfig    AppConfig
+	DBConfig     DBConfig
+	PulsarConfig PulsarConfig
 }
 
 type AppConfig struct {
@@ -19,6 +20,10 @@ type DBConfig struct {
 	User     string `default:"weeb" env:"DBUSERNAME"`
 	Password string `required:"true" env:"DBPASSWORD" default:"mysecretpassword"`
 	Port     uint   `default:"3306" env:"DBPort"`
+}
+
+type PulsarConfig struct {
+	URL string `default:"pulsar://localhost:6650" env:"PULSARURL"`
 }
 
 func LoadConfigOrPanic() Config {
