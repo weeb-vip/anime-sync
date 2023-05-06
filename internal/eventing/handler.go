@@ -16,21 +16,23 @@ func Eventing() error {
 
 	defer client.Close()
 
-	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
-		Topic:            "public/default/myanimelist.public.anime",
-		SubscriptionName: "my-sub",
-		Type:             pulsar.Shared,
+	reader, err := client.CreateReader(pulsar.ReaderOptions{
+		Topic:          "public/default/myanimelist.public.anime",
+		StartMessageID: pulsar.EarliestMessageID(),
 	})
-
-	defer consumer.Close()
-
-	msg, err := consumer.Receive(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer reader.Close()
 
-	fmt.Printf("Received message msgId: %#v -- content: '%s'\n",
-		msg.ID(), string(msg.Payload()))
+	for reader.HasNext() {
+		msg, err := reader.Next(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	return nil
+		fmt.Printf("Received message msgId: %#v -- content: '%s'\n",
+			msg.ID(), string(msg.Payload()))
+	}
+
 }
