@@ -60,7 +60,7 @@ func Eventing() error {
 			continue
 		}
 		consumer.Ack(msg)
-		time.Sleep(1 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 	return nil
 }
