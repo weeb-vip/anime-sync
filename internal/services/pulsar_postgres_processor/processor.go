@@ -125,6 +125,7 @@ func (p *PulsarPostgresProcessor) parseToEntity(data Schema) (*anime.Anime, erro
 	}
 
 	newAnime.ID = data.Id
+	newAnime.AnidbID = data.AnidbID
 	newAnime.Type = record_type
 	newAnime.TitleEn = data.TitleEn
 	newAnime.TitleJp = data.TitleJp
