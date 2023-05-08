@@ -24,6 +24,7 @@ type Schema struct {
 	Genres        *string `json:"genres"`
 	Licensors     *string `json:"licensors"`
 	Studios       *string `json:"studios"`
+	Ranking       *int    `json:"ranking"`
 }
 
 type Source struct {
