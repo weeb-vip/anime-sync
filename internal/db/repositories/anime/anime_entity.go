@@ -27,6 +27,7 @@ type Anime struct {
 	Licensors     *string      `gorm:"column:licensors;type:text;null" json:"licensors"`
 	Studios       *string      `gorm:"column:studios;type:text;null" json:"studios"`
 	Rating        *string      `gorm:"column:rating;null" json:"rating"`
+	Ranking       *int         `gorm:"column:ranking;null" json:"ranking"`
 	CreatedAt     time.Time    `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt     time.Time    `gorm:"column:updated_at" json:"updated_at"`
 }
