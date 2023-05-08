@@ -2,6 +2,7 @@ package pulsar_postgres_processor
 
 type Schema struct {
 	Id            string  `json:"id"`
+	AnidbID       *string `json:"anidbid"`
 	TitleEn       *string `json:"title_en"`
 	TitleJp       *string `json:"title_jp"`
 	TitleRomaji   *string `json:"title_romaji"`
