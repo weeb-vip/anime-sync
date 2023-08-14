@@ -1,4 +1,4 @@
-package pulsar_postgres_processor
+package pulsar_anime_postgres_processor
 
 type Schema struct {
 	Id            string  `json:"id"`
