@@ -18,7 +18,6 @@ func EventingAnimeEpisode() error {
 
 	database := db.NewDB(cfg.DBConfig)
 
-	)
 	posgresProcessorOptions := pulsar_anime_postgres_processor.Options{
 		NoErrorOnDelete: true,
 	}
