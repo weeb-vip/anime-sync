@@ -1,6 +1,8 @@
 package config
 
-import "github.com/jinzhu/configor"
+import (
+	"github.com/jinzhu/configor"
+)
 
 type Config struct {
 	AppConfig    AppConfig
