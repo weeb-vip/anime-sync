@@ -6,6 +6,7 @@ package commands
 import (
 	"github.com/spf13/cobra"
 	"github.com/weeb-vip/anime-sync/internal/eventing"
+	"log"
 )
 
 // serveCmd represents the serve command
@@ -19,6 +20,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Println("Running anime episode eventing...")
 		return eventing.EventingAnimeEpisode()
 	},
 }
