@@ -37,8 +37,8 @@ func EventingAnimeEpisode() error {
 	defer client.Close()
 
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
-		Topic:            "public/default/myanimelist.public.anime_episode",
-		SubscriptionName: "my-sub",
+		Topic:            cfg.PulsarConfig.Topic,
+		SubscriptionName: cfg.PulsarConfig.SubscribtionName,
 		Type:             pulsar.Shared,
 	})
 

@@ -25,7 +25,9 @@ type DBConfig struct {
 }
 
 type PulsarConfig struct {
-	URL string `default:"pulsar://localhost:6650" env:"PULSARURL"`
+	URL              string `default:"pulsar://localhost:6650" env:"PULSARURL"`
+	Topic            string `default:"public/default/myanimelist.public.anime" env:"PULSARTOPIC"`
+	SubscribtionName string `default:"my-sub" env:"PULSARSUBSCRIPTIONNAME"`
 }
 
 func LoadConfigOrPanic() Config {
