@@ -19,5 +19,5 @@ type AnimeEpisode struct {
 
 // set table name
 func (AnimeEpisode) TableName() string {
-	return "anime_episode"
+	return "episodes"
 }
