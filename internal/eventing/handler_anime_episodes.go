@@ -7,22 +7,23 @@ import (
 	"github.com/weeb-vip/anime-sync/config"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/services/processor"
-	"github.com/weeb-vip/anime-sync/internal/services/pulsar_postgres_processor"
+	pulsar_anime_postgres_processor "github.com/weeb-vip/anime-sync/internal/services/pulsar_anime_episode_postgres_processor"
+
 	"log"
 	"time"
 )
 
-func Eventing() error {
+func EventingAnimeEpisode() error {
 	cfg := config.LoadConfigOrPanic()
 
 	database := db.NewDB(cfg.DBConfig)
 
-	posgresProcessorOptions := pulsar_postgres_processor.Options{
+	posgresProcessorOptions := pulsar_anime_postgres_processor.Options{
 		NoErrorOnDelete: true,
 	}
-	postgresProcessor := pulsar_postgres_processor.NewPulsarPostgresProcessor(posgresProcessorOptions, database)
+	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimeEpisodePostgresProcessor(posgresProcessorOptions, database)
 
-	messageProcessor := processor.NewProcessor[pulsar_postgres_processor.Payload]()
+	messageProcessor := processor.NewProcessor[pulsar_anime_postgres_processor.Payload]()
 
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: cfg.PulsarConfig.URL,
@@ -36,8 +37,8 @@ func Eventing() error {
 	defer client.Close()
 
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
-		Topic:            "public/default/myanimelist.public.anime",
-		SubscriptionName: "my-sub",
+		Topic:            cfg.PulsarConfig.Topic,
+		SubscriptionName: cfg.PulsarConfig.SubscribtionName,
 		Type:             pulsar.Shared,
 	})
 

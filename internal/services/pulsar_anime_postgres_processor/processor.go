@@ -1,4 +1,4 @@
-package pulsar_postgres_processor
+package pulsar_anime_postgres_processor
 
 import (
 	"database/sql"
@@ -12,24 +12,24 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type PulsarPostgresProcessorImpl interface {
+type PulsarAnimePostgresProcessorImpl interface {
 	Process(data Payload) error
 	parseToEntity(data Schema) (*anime.Anime, error)
 }
 
-type PulsarPostgresProcessor struct {
+type PulsarAnimePostgresProcessor struct {
 	Repository anime.AnimeRepositoryImpl
 	Options    Options
 }
 
-func NewPulsarPostgresProcessor(opt Options, db *db.DB) PulsarPostgresProcessorImpl {
-	return &PulsarPostgresProcessor{
+func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB) PulsarAnimePostgresProcessorImpl {
+	return &PulsarAnimePostgresProcessor{
 		Repository: anime.NewAnimeRepository(db),
 		Options:    opt,
 	}
 }
 
-func (p *PulsarPostgresProcessor) Process(data Payload) error {
+func (p *PulsarAnimePostgresProcessor) Process(data Payload) error {
 
 	if data.Before == nil && data.After != nil {
 		// add to db
@@ -83,7 +83,7 @@ func (p *PulsarPostgresProcessor) Process(data Payload) error {
 
 }
 
-func (p *PulsarPostgresProcessor) parseToEntity(data Schema) (*anime.Anime, error) {
+func (p *PulsarAnimePostgresProcessor) parseToEntity(data Schema) (*anime.Anime, error) {
 	var newAnime anime.Anime
 
 	animeStartDate := sql.NullTime{
