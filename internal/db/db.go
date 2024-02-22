@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/weeb-vip/anime-sync/config"
 	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 type DB struct {
@@ -12,7 +11,7 @@ type DB struct {
 }
 
 func NewDB(cfg config.DBConfig) *DB {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DataBase)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local&tls=%s&interpolateParams=true", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DataBase, cfg.SSLMode)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
