@@ -11,7 +11,6 @@ require (
 	github.com/jinzhu/configor v1.2.1
 	github.com/spf13/cobra v1.7.0
 	gorm.io/driver/mysql v1.5.0
-	gorm.io/gorm v1.25.0
 )
 
 require (
@@ -63,4 +62,5 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gorm.io/gorm v1.25.0 // indirect
 )
