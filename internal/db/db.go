@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/weeb-vip/anime-sync/config"
 	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 type DB struct {
