@@ -11,7 +11,7 @@ type AnimeEpisode struct {
 	Episode   *int         `gorm:"column:episode;not null" json:"episode"`
 	TitleEn   *string      `gorm:"column:title_en" json:"title_en"`
 	TitleJp   *string      `gorm:"column:title_jp" json:"title_jp"`
-	Aired     sql.NullTime `gorm:"column:aired;type:date;null" json:"aired"`
+	Aired     sql.NullTime `gorm:"column:aired;type:timestamp;null" json:"aired"`
 	Synopsis  *string      `gorm:"column:synopsis" json:"synopsis"`
 	CreatedAt time.Time    `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt time.Time    `gorm:"column:updated_at" json:"updated_at"`

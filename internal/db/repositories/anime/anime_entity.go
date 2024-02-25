@@ -18,8 +18,8 @@ type Anime struct {
 	Synopsis      *string      `gorm:"column:synopsis;null" json:"synopsis"`
 	Episodes      *int         `gorm:"column:episodes;null" json:"episodes"`
 	Status        *string      `gorm:"column:status;null" json:"status"`
-	StartDate     sql.NullTime `gorm:"column:start_date;type:date;null" json:"start_date"`
-	EndDate       sql.NullTime `gorm:"column:end_date;type:date;null" json:"end_date"`
+	StartDate     sql.NullTime `gorm:"column:start_date;type:timestamp;null" json:"start_date"`
+	EndDate       sql.NullTime `gorm:"column:end_date;type:timestamp;null" json:"end_date"`
 	Genres        *string      `gorm:"column:genres;type:text;null" json:"genres"`
 	Duration      *string      `gorm:"column:duration;null" json:"duration"`
 	Broadcast     *string      `gorm:"column:broadcast;null" json:"broadcast"`
