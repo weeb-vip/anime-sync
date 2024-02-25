@@ -93,7 +93,7 @@ func (p *PulsarAnimeEpisodePostgresProcessor) parseToEntity(data Schema) (*anime
 	}
 
 	if data.Aired != nil {
-		aired, err := time.Parse("2006-01-02 15:04:05 -0700 MST", *data.Aired)
+		aired, err := time.Parse(time.RFC3339, *data.Aired)
 		if err != nil {
 			return nil, err
 		}
