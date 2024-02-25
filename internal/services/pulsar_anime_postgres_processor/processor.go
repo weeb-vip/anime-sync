@@ -92,7 +92,7 @@ func (p *PulsarAnimePostgresProcessor) parseToEntity(data Schema) (*anime.Anime,
 	}
 
 	if data.StartDate != nil {
-		startDate, err := time.Parse(time.RFC3339, *data.StartDate)
+		startDate, err := time.Parse("2006-01-02 15:04:05 -0700 MST", *data.StartDate)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +108,7 @@ func (p *PulsarAnimePostgresProcessor) parseToEntity(data Schema) (*anime.Anime,
 		Valid: false,
 	}
 	if data.EndDate != nil {
-		endDate, err := time.Parse(time.RFC3339, *data.EndDate)
+		endDate, err := time.Parse("2006-01-02 15:04:05 -0700 MST", *data.EndDate)
 		if err != nil {
 			return nil, err
 		}
