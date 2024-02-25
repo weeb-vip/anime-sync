@@ -1,20 +1,19 @@
 package anime
 
 import (
-	"database/sql"
 	"time"
 )
 
 type AnimeEpisode struct {
-	ID        string       `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	AnimeID   *string      `gorm:"column:anime_id;type:uuid;not null" json:"anime_id"`
-	Episode   *int         `gorm:"column:episode;not null" json:"episode"`
-	TitleEn   *string      `gorm:"column:title_en" json:"title_en"`
-	TitleJp   *string      `gorm:"column:title_jp" json:"title_jp"`
-	Aired     sql.NullTime `gorm:"column:aired;type:timestamp;null" json:"aired"`
-	Synopsis  *string      `gorm:"column:synopsis" json:"synopsis"`
-	CreatedAt time.Time    `gorm:"column:created_at" json:"created_at"`
-	UpdatedAt time.Time    `gorm:"column:updated_at" json:"updated_at"`
+	ID        string    `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	AnimeID   *string   `gorm:"column:anime_id;type:uuid;not null" json:"anime_id"`
+	Episode   *int      `gorm:"column:episode;not null" json:"episode"`
+	TitleEn   *string   `gorm:"column:title_en" json:"title_en"`
+	TitleJp   *string   `gorm:"column:title_jp" json:"title_jp"`
+	Aired     *string   `gorm:"column:aired;null" json:"aired"`
+	Synopsis  *string   `gorm:"column:synopsis" json:"synopsis"`
+	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
 
 // set table name

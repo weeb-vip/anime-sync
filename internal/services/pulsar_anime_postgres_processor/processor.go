@@ -1,7 +1,6 @@
 package pulsar_anime_postgres_processor
 
 import (
-	"database/sql"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"log"
@@ -86,36 +85,25 @@ func (p *PulsarAnimePostgresProcessor) Process(data Payload) error {
 func (p *PulsarAnimePostgresProcessor) parseToEntity(data Schema) (*anime.Anime, error) {
 	var newAnime anime.Anime
 
-	animeStartDate := sql.NullTime{
-		Time:  time.Time{},
-		Valid: false,
-	}
-
+	var animeStartDate *string
 	if data.StartDate != nil {
 		startDate, err := time.Parse(time.RFC3339, *data.StartDate)
 		if err != nil {
 			return nil, err
 		}
-		animeStartDate = sql.NullTime{
-			Time:  startDate,
-			Valid: true,
-		}
+		animeStartDateFormatted := startDate.Format("2006-01-02 15:04:05")
+		animeStartDate = &animeStartDateFormatted
 
 	}
 
-	animeEndDate := sql.NullTime{
-		Time:  time.Time{},
-		Valid: false,
-	}
+	var animeEndDate *string
 	if data.EndDate != nil {
 		endDate, err := time.Parse(time.RFC3339, *data.EndDate)
 		if err != nil {
 			return nil, err
 		}
-		animeEndDate = sql.NullTime{
-			Time:  endDate,
-			Valid: true,
-		}
+		animeEndDateFormatted := endDate.Format("2006-01-02 15:04:05")
+		animeEndDate = &animeEndDateFormatted
 	}
 	var record_type *anime.RECORD_TYPE
 	if data.Type != nil {
