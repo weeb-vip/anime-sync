@@ -1,6 +1,7 @@
 package pulsar_anime_postgres_processor
 
 import (
+	"context"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"log"
@@ -12,8 +13,8 @@ type Options struct {
 }
 
 type PulsarAnimePostgresProcessorImpl interface {
-	Process(data Payload) error
-	parseToEntity(data Schema) (*anime.Anime, error)
+	Process(ctx context.Context, data Payload) error
+	parseToEntity(ctx context.Context, data Schema) (*anime.Anime, error)
 }
 
 type PulsarAnimePostgresProcessor struct {
@@ -28,11 +29,11 @@ func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB) PulsarAnimePostgres
 	}
 }
 
-func (p *PulsarAnimePostgresProcessor) Process(data Payload) error {
+func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload) error {
 
 	if data.Before == nil && data.After != nil {
 		// add to db
-		newAnime, err := p.parseToEntity(*data.After)
+		newAnime, err := p.parseToEntity(ctx, *data.After)
 		if err != nil {
 			return err
 		}
@@ -44,7 +45,7 @@ func (p *PulsarAnimePostgresProcessor) Process(data Payload) error {
 
 	if data.After == nil && data.Before != nil {
 		// delete from db
-		oldAnime, err := p.parseToEntity(*data.Before)
+		oldAnime, err := p.parseToEntity(ctx, *data.Before)
 		if err != nil {
 			return err
 		}
@@ -64,7 +65,7 @@ func (p *PulsarAnimePostgresProcessor) Process(data Payload) error {
 
 	if data.Before != nil && data.After != nil {
 		// update db
-		newAnime, err := p.parseToEntity(*data.After)
+		newAnime, err := p.parseToEntity(ctx, *data.After)
 		if err != nil {
 			return err
 		}
@@ -82,7 +83,7 @@ func (p *PulsarAnimePostgresProcessor) Process(data Payload) error {
 
 }
 
-func (p *PulsarAnimePostgresProcessor) parseToEntity(data Schema) (*anime.Anime, error) {
+func (p *PulsarAnimePostgresProcessor) parseToEntity(ctx context.Context, data Schema) (*anime.Anime, error) {
 	var newAnime anime.Anime
 
 	var animeStartDate *string

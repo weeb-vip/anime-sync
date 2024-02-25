@@ -1,15 +1,16 @@
 package processor
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/cenkalti/backoff/v4"
 )
 
-type ProcessorFunc[T any] func(data T) error
+type ProcessorFunc[T any] func(ctx context.Context, data T) error
 
 type ProcessorImpl[T any] interface {
-	Parse(payload string) (*T, error)
-	Process(payload string, fn ProcessorFunc[T]) error
+	Parse(ctx context.Context, payload string) (*T, error)
+	Process(ctx context.Context, payload string, fn ProcessorFunc[T]) error
 }
 
 type Processor[T any] struct {
@@ -19,7 +20,7 @@ func NewProcessor[T any]() *Processor[T] {
 	return &Processor[T]{}
 }
 
-func (p *Processor[T]) Parse(payload string) (*T, error) {
+func (p *Processor[T]) Parse(ctx context.Context, payload string) (*T, error) {
 	// parse from json
 	var data T
 	err := json.Unmarshal([]byte(payload), &data)
@@ -30,8 +31,8 @@ func (p *Processor[T]) Parse(payload string) (*T, error) {
 
 }
 
-func (p *Processor[T]) Process(payload string, fn ProcessorFunc[T]) error {
-	data, err := p.Parse(payload)
+func (p *Processor[T]) Process(ctx context.Context, payload string, fn ProcessorFunc[T]) error {
+	data, err := p.Parse(ctx, payload)
 	if err != nil {
 		return err
 	}
@@ -39,7 +40,7 @@ func (p *Processor[T]) Process(payload string, fn ProcessorFunc[T]) error {
 	// do something with data
 
 	operation := func() error {
-		return fn(*data)
+		return fn(ctx, *data)
 	}
 
 	err = backoff.Retry(operation, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 10))
