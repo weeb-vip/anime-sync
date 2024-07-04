@@ -2,6 +2,7 @@ package eventing
 
 import (
 	"context"
+	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/weeb-vip/anime-sync/config"
 	"github.com/weeb-vip/anime-sync/internal/db"
@@ -32,7 +33,13 @@ func EventingAnime() error {
 	animeConsumer := consumer.NewConsumer[pulsar_anime_postgres_processor.Payload](ctx, cfg.PulsarConfig)
 
 	log.Info("Starting anime eventing")
-	return animeConsumer.Receive(ctx, func(ctx context.Context, msg pulsar.Message) error {
+	err := animeConsumer.Receive(ctx, func(ctx context.Context, msg pulsar.Message) error {
 		return messageProcessor.Process(ctx, string(msg.Payload()), postgresProcessor.Process)
 	})
+	if err != nil {
+		log.Error(fmt.Sprintf("Error receiving message: %v", err))
+		return err
+	}
+
+	return err
 }
