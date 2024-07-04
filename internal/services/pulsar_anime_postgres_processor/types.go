@@ -1,5 +1,13 @@
 package pulsar_anime_postgres_processor
 
+type Action = string
+
+const (
+	CreateAction Action = "create"
+	UpdateAction Action = "update"
+	DeleteAction Action = "delete"
+)
+
 type Schema struct {
 	Id            string  `json:"id"`
 	AnidbID       *string `json:"anidbid"`
@@ -46,4 +54,9 @@ type Payload struct {
 	Before *Schema `json:"before"`
 	After  *Schema `json:"after"`
 	Source Source  `json:"source"`
+}
+
+type ProducerPayload struct {
+	Action string  `json:"action"`
+	Data   *Schema `json:"data"`
 }

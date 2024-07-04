@@ -24,7 +24,7 @@ func EventingAnime() error {
 		NoErrorOnDelete: true,
 	}
 
-	animeProducer := producer.NewProducer[pulsar_anime_postgres_processor.Schema](ctx, cfg.PulsarConfig)
+	animeProducer := producer.NewProducer[pulsar_anime_postgres_processor.ProducerPayload](ctx, cfg.PulsarConfig)
 
 	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimePostgresProcessor(posgresProcessorOptions, database, animeProducer)
 
