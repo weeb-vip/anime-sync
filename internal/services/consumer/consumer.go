@@ -38,7 +38,7 @@ func NewConsumer[T any](ctx context.Context, cfg config.PulsarConfig) Consumer[T
 
 func (c *ConsumerImpl[T]) Receive(ctx context.Context, process func(ctx context.Context, msg pulsar.Message) error) error {
 	log := logger.FromCtx(ctx)
-	if c.consumer == nil {
+	if c.consumer != nil {
 		return nil
 	}
 
