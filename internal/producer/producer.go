@@ -9,7 +9,7 @@ import (
 )
 
 type Producer[T any] interface {
-	Send(ctx context.Context, data string) error
+	Send(ctx context.Context, data []byte) error
 }
 
 type ProducerImpl[T any] struct {
@@ -34,7 +34,7 @@ func NewProducer[T any](ctx context.Context, cfg config.PulsarConfig) Producer[T
 	}
 }
 
-func (p *ProducerImpl[T]) Send(ctx context.Context, data string) error {
+func (p *ProducerImpl[T]) Send(ctx context.Context, data []byte) error {
 	log := logger.FromCtx(ctx)
 	producer, err := p.client.CreateProducer(pulsar.ProducerOptions{
 		Topic: p.config.ProducerTopic,
@@ -48,7 +48,7 @@ func (p *ProducerImpl[T]) Send(ctx context.Context, data string) error {
 	defer producer.Close()
 
 	msg := pulsar.ProducerMessage{
-		Payload: []byte(data),
+		Payload: data,
 	}
 
 	_, err = producer.Send(ctx, &msg)

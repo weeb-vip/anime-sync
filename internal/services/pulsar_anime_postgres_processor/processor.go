@@ -2,6 +2,7 @@ package pulsar_anime_postgres_processor
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/producer"
@@ -41,6 +42,16 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 			return err
 		}
 		err = p.Repository.Upsert(newAnime)
+		if err != nil {
+			return err
+		}
+
+		// convert new anime to json
+		jsonAnime, err := json.Marshal(newAnime)
+		if err != nil {
+			return err
+		}
+		err = p.Producer.Send(ctx, jsonAnime)
 		if err != nil {
 			return err
 		}
