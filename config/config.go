@@ -29,6 +29,7 @@ type PulsarConfig struct {
 	URL              string `default:"pulsar://localhost:6650" env:"PULSARURL"`
 	Topic            string `default:"public/default/myanimelist.public.anime" env:"PULSARTOPIC"`
 	SubscribtionName string `default:"my-sub" env:"PULSARSUBSCRIPTIONNAME"`
+	ProducerTopic    string `default:"public/default/myanimelist.public.anime-algolia" env:"PULSARPRODUCERTOPIC"`
 }
 
 func LoadConfigOrPanic() Config {

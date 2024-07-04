@@ -6,11 +6,10 @@ import (
 	"github.com/weeb-vip/anime-sync/config"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/logger"
+	"github.com/weeb-vip/anime-sync/internal/producer"
+	"github.com/weeb-vip/anime-sync/internal/services/consumer"
 	"github.com/weeb-vip/anime-sync/internal/services/processor"
 	"github.com/weeb-vip/anime-sync/internal/services/pulsar_anime_postgres_processor"
-	"go.uber.org/zap"
-
-	"time"
 )
 
 func EventingAnime() error {
@@ -23,46 +22,17 @@ func EventingAnime() error {
 	posgresProcessorOptions := pulsar_anime_postgres_processor.Options{
 		NoErrorOnDelete: true,
 	}
-	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimePostgresProcessor(posgresProcessorOptions, database)
+
+	animeProducer := producer.NewProducer[pulsar_anime_postgres_processor.Schema](ctx, cfg.PulsarConfig)
+
+	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimePostgresProcessor(posgresProcessorOptions, database, animeProducer)
 
 	messageProcessor := processor.NewProcessor[pulsar_anime_postgres_processor.Payload]()
 
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: cfg.PulsarConfig.URL,
+	animeConsumer := consumer.NewConsumer[pulsar_anime_postgres_processor.Payload](ctx, cfg.PulsarConfig)
+
+	log.Info("Starting anime eventing")
+	return animeConsumer.Receive(ctx, func(ctx context.Context, msg pulsar.Message) error {
+		return messageProcessor.Process(ctx, string(msg.Payload()), postgresProcessor.Process)
 	})
-
-	if err != nil {
-		log.Fatal("Error creating pulsar client: ", zap.String("error", err.Error()))
-		return err
-	}
-
-	defer client.Close()
-
-	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
-		Topic:            cfg.PulsarConfig.Topic,
-		SubscriptionName: cfg.PulsarConfig.SubscribtionName,
-		Type:             pulsar.Shared,
-	})
-
-	defer consumer.Close()
-
-	// create channel to receive messages
-
-	for {
-		msg, err := consumer.Receive(ctx)
-		if err != nil {
-			log.Fatal("Error receiving message: ", zap.String("error", err.Error()))
-		}
-
-		log.Info("Received message", zap.String("msgId", msg.ID().String()))
-
-		err = messageProcessor.Process(ctx, string(msg.Payload()), postgresProcessor.Process)
-		if err != nil {
-			log.Warn("error processing message: ", zap.String("error", err.Error()))
-			continue
-		}
-		consumer.Ack(msg)
-		time.Sleep(50 * time.Millisecond)
-	}
-	return nil
 }

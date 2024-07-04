@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
+	"github.com/weeb-vip/anime-sync/internal/producer"
 	"log"
 	"time"
 )
@@ -20,12 +21,14 @@ type PulsarAnimePostgresProcessorImpl interface {
 type PulsarAnimePostgresProcessor struct {
 	Repository anime.AnimeRepositoryImpl
 	Options    Options
+	Producer   producer.Producer[Schema]
 }
 
-func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB) PulsarAnimePostgresProcessorImpl {
+func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB, producer producer.Producer[Schema]) PulsarAnimePostgresProcessorImpl {
 	return &PulsarAnimePostgresProcessor{
 		Repository: anime.NewAnimeRepository(db),
 		Options:    opt,
+		Producer:   producer,
 	}
 }
 
