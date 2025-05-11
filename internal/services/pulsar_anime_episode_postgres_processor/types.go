@@ -1,13 +1,16 @@
 package pulsar_anime_postgres_processor
 
+import "time"
+
 type Schema struct {
-	Id       string  `json:"id"`
-	AnimeId  *string `json:"anime_id"`
-	Episode  *int    `json:"episode"`
-	TitleEn  *string `json:"title_en"`
-	TitleJp  *string `json:"title_jp"`
-	Aired    *string `json:"aired"`
-	Synopsis *string `json:"synopsis"`
+	Id            string     `json:"id"`
+	AnimeId       *string    `json:"anime_id"`
+	Episode       *int       `json:"episode"`
+	TitleEn       *string    `json:"title_en"`
+	TitleJp       *string    `json:"title_jp"`
+	Aired         *time.Time `json:"aired"`
+	Synopsis      *string    `json:"synopsis"`
+	TitleSynonyms *string    `json:"title_synonyms"`
 }
 
 type Source struct {

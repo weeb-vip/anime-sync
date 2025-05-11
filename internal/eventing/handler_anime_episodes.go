@@ -64,5 +64,5 @@ func EventingAnimeEpisode() error {
 		consumer.Ack(msg)
 		time.Sleep(50 * time.Millisecond)
 	}
-	return nil
+
 }

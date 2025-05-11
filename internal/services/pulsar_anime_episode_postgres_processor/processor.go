@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	anime_episode "github.com/weeb-vip/anime-sync/internal/db/repositories/anime_episode"
-
 	"log"
 	"time"
 )
@@ -87,22 +86,11 @@ func (p *PulsarAnimeEpisodePostgresProcessor) Process(ctx context.Context, data 
 func (p *PulsarAnimeEpisodePostgresProcessor) parseToEntity(ctx context.Context, data Schema) (*anime_episode.AnimeEpisode, error) {
 	var newEpisode anime_episode.AnimeEpisode
 
-	var episodeAird *string
-
-	if data.Aired != nil {
-		aired, err := time.Parse(time.RFC3339, *data.Aired)
-		if err != nil {
-			return nil, err
-		}
-		episodeAirdFormatted := aired.Format("2006-01-02 15:04:05")
-		episodeAird = &episodeAirdFormatted
-	}
-
 	newEpisode.ID = data.Id
 	newEpisode.AnimeID = data.AnimeId
 	newEpisode.TitleEn = data.TitleEn
 	newEpisode.TitleJp = data.TitleJp
-	newEpisode.Aired = episodeAird
+	newEpisode.Aired = data.Aired
 	newEpisode.Episode = data.Episode
 	newEpisode.Synopsis = data.Synopsis
 
