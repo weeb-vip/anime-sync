@@ -90,6 +90,18 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		if err != nil {
 			return err
 		}
+		// convert new anime to json
+		jsonAnime, err := json.Marshal(ProducerPayload{
+			Action: CreateAction,
+			Data:   data.After,
+		})
+		if err != nil {
+			return err
+		}
+		err = p.Producer.Send(ctx, jsonAnime)
+		if err != nil {
+			return err
+		}
 	}
 
 	if data.Before != nil && data.After == nil {
