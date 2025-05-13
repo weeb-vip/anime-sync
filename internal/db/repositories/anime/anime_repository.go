@@ -18,7 +18,21 @@ func NewAnimeRepository(db *db.DB) AnimeRepositoryImpl {
 }
 
 func (a *AnimeRepository) Upsert(anime *Anime) error {
-	err := a.db.DB.Save(anime).Error
+	var existingAnime Anime
+	err := a.db.DB.Where("title_en = ?", anime.TitleEn).First(&existingAnime).Error
+	if err != nil {
+		if err.Error() != "record not found" {
+			return err
+		}
+		// if not found, create new
+		err = a.db.DB.Create(anime).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	anime.ID = existingAnime.ID
+	err = a.db.DB.Save(anime).Error
 	if err != nil {
 		return err
 	}
