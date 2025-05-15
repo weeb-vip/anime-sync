@@ -5,7 +5,7 @@ import "github.com/weeb-vip/anime-sync/internal/db"
 type RECORD_TYPE string
 
 type AnimeRepositoryImpl interface {
-	Upsert(anime *Anime) error
+	Upsert(anime *Anime, oldTitle *string) error
 	Delete(anime *Anime) error
 }
 
@@ -17,7 +17,7 @@ func NewAnimeRepository(db *db.DB) AnimeRepositoryImpl {
 	return &AnimeRepository{db: db}
 }
 
-func (a *AnimeRepository) Upsert(anime *Anime) error {
+func (a *AnimeRepository) Upsert(anime *Anime, oldTitle *string) error {
 	var query = "title_en = ?"
 	if anime.TitleEn == nil || *anime.TitleEn == "" {
 		query = "title_jp = ?"
@@ -25,6 +25,9 @@ func (a *AnimeRepository) Upsert(anime *Anime) error {
 	var val = anime.TitleEn
 	if anime.TitleEn == nil || *anime.TitleEn == "" {
 		val = anime.TitleJp
+	}
+	if oldTitle != nil {
+		val = oldTitle
 	}
 
 	var existingAnime Anime

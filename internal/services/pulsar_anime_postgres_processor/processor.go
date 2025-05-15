@@ -41,7 +41,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		if err != nil {
 			return err
 		}
-		err = p.Repository.Upsert(newAnime)
+		err = p.Repository.Upsert(newAnime, nil)
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,11 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		if err != nil {
 			return err
 		}
-		err = p.Repository.Upsert(newAnime)
+		var oldTitle *string
+		if *data.Before.TitleEn != *data.After.TitleEn {
+			oldTitle = data.Before.TitleEn
+		}
+		err = p.Repository.Upsert(newAnime, oldTitle)
 		if err != nil {
 			return err
 		}
