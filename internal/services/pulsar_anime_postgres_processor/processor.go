@@ -7,6 +7,7 @@ import (
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/producer"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -46,15 +47,31 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 			return err
 		}
 
-		// convert new anime to json
-		jsonAnime, err := json.Marshal(ProducerPayload{
-			Action: CreateAction,
-			Data:   data.After,
-		})
 		if err != nil {
 			return err
 		}
-		err = p.Producer.Send(ctx, jsonAnime)
+		var title string
+		if data.After.TitleEn != nil {
+			title = strings.ToLower(*data.After.TitleEn)
+			title = strings.ReplaceAll(title, " ", "_")
+		} else if data.After.TitleJp != nil {
+			title = strings.ToLower(*data.After.TitleJp)
+			title = strings.ReplaceAll(title, " ", "_")
+		} else {
+			return nil
+		}
+		payload := &ImagePayload{
+			Data: ImageSchema{
+				Name: title,
+				URL:  *data.After.ImageUrl,
+				Type: DataTypeAnime,
+			},
+		}
+		jsonImage, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		err = p.Producer.Send(ctx, jsonImage)
 		if err != nil {
 			return err
 		}
