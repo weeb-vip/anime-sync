@@ -15,9 +15,10 @@ type Producer[T any] interface {
 type ProducerImpl[T any] struct {
 	client pulsar.Client
 	config config.PulsarConfig
+	topic  string
 }
 
-func NewProducer[T any](ctx context.Context, cfg config.PulsarConfig) Producer[T] {
+func NewProducer[T any](ctx context.Context, cfg config.PulsarConfig, topic string) Producer[T] {
 	log := logger.FromCtx(ctx)
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: cfg.URL,
@@ -37,7 +38,7 @@ func NewProducer[T any](ctx context.Context, cfg config.PulsarConfig) Producer[T
 func (p *ProducerImpl[T]) Send(ctx context.Context, data []byte) error {
 	log := logger.FromCtx(ctx)
 	producer, err := p.client.CreateProducer(pulsar.ProducerOptions{
-		Topic: p.config.ProducerTopic,
+		Topic: p.topic,
 	})
 
 	if err != nil {
