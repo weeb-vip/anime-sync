@@ -43,7 +43,7 @@ func (p *Processor[T]) Process(ctx context.Context, payload string, fn Processor
 		return fn(ctx, *data)
 	}
 
-	err = backoff.Retry(operation, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 10))
+	err = backoff.Retry(operation, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3))
 	if err != nil {
 		// Handle error.
 		return err
