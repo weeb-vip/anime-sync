@@ -32,6 +32,7 @@ func NewProducer[T any](ctx context.Context, cfg config.PulsarConfig, topic stri
 	return &ProducerImpl[T]{
 		config: cfg,
 		client: client,
+		topic:  topic,
 	}
 }
 
