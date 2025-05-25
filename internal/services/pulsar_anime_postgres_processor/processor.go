@@ -65,10 +65,14 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		} else {
 			return nil
 		}
+		imageURL := ""
+		if data.After.ImageUrl != nil {
+			imageURL = *data.After.ImageUrl
+		}
 		payload := &ImagePayload{
 			Data: ImageSchema{
 				Name: title,
-				URL:  *data.After.ImageUrl,
+				URL:  imageURL,
 				Type: DataTypeAnime,
 			},
 		}
@@ -76,14 +80,18 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		if err != nil {
 			return err
 		}
+
 		err = p.Producer.Send(ctx, jsonAnime)
 		if err != nil {
 			return err
 		}
 
-		err = p.ProducerImage.Send(ctx, jsonImage)
-		if err != nil {
-			return err
+		if data.After.ImageUrl != nil {
+			err = p.ProducerImage.Send(ctx, jsonImage)
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -142,10 +150,14 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		} else {
 			return nil
 		}
+		imageURL := ""
+		if data.After.ImageUrl != nil {
+			imageURL = *data.After.ImageUrl
+		}
 		payload := &ImagePayload{
 			Data: ImageSchema{
 				Name: title,
-				URL:  *data.After.ImageUrl,
+				URL:  imageURL,
 				Type: DataTypeAnime,
 			},
 		}
@@ -157,10 +169,11 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		if err != nil {
 			return err
 		}
-
-		err = p.ProducerImage.Send(ctx, jsonImage)
-		if err != nil {
-			return err
+		if data.After.ImageUrl != nil {
+			err = p.ProducerImage.Send(ctx, jsonImage)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
