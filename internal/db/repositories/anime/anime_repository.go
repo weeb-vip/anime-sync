@@ -18,20 +18,9 @@ func NewAnimeRepository(db *db.DB) AnimeRepositoryImpl {
 }
 
 func (a *AnimeRepository) Upsert(anime *Anime, oldTitle *string) error {
-	var query = "title_en = ?"
-	if anime.TitleEn == nil || *anime.TitleEn == "" {
-		query = "title_jp = ?"
-	}
-	var val = anime.TitleEn
-	if anime.TitleEn == nil || *anime.TitleEn == "" {
-		val = anime.TitleJp
-	}
-	if oldTitle != nil {
-		val = oldTitle
-	}
-
 	var existingAnime Anime
-	err := a.db.DB.Where(query, val).First(&existingAnime).Error
+	// find by id
+	err := a.db.DB.Where("id = ?", anime.ID).First(&anime).Error
 	if err != nil {
 		if err.Error() != "record not found" {
 			return err
