@@ -2,7 +2,6 @@ package anime
 
 import (
 	"github.com/weeb-vip/anime-sync/internal/db"
-	"log"
 )
 
 type RECORD_TYPE string
@@ -21,24 +20,8 @@ func NewAnimeRepository(db *db.DB) AnimeRepositoryImpl {
 }
 
 func (a *AnimeRepository) Upsert(anime *Anime, oldTitle *string) error {
-	var existingAnime Anime
-	log.Println("ANIME ID:", anime.ID)
-	// find by id
-	err := a.db.DB.Where("id = ?", anime.ID).First(&anime).Error
-	if err != nil {
-		if err.Error() != "record not found" {
-			return err
-		}
-		// if not found, create new
-		log.Println("Creating new anime record with ID:", anime.ID)
-		err = a.db.DB.Create(anime).Error
-		if err != nil {
-			return err
-		}
-		return nil
-	}
 
-	err = a.db.DB.Save(anime).Error
+	err := a.db.DB.Save(anime).Error
 	if err != nil {
 		return err
 	}
