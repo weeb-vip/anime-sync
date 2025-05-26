@@ -18,7 +18,7 @@ const (
 )
 
 type Schema struct {
-	Id            string  `json:"id"`
+	ID            string  `json:"id"`
 	AnidbID       *string `json:"anidbid"`
 	TitleEn       *string `json:"title_en"`
 	TitleJp       *string `json:"title_jp"`
