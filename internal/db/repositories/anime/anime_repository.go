@@ -22,6 +22,7 @@ func NewAnimeRepository(db *db.DB) AnimeRepositoryImpl {
 
 func (a *AnimeRepository) Upsert(anime *Anime, oldTitle *string) error {
 	var existingAnime Anime
+	log.Println("ANIME ID:", anime.ID)
 	// find by id
 	err := a.db.DB.Where("id = ?", anime.ID).First(&anime).Error
 	if err != nil {
