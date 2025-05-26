@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/cenkalti/backoff/v4"
+	"log"
 )
 
 type ProcessorFunc[T any] func(ctx context.Context, data T) error
@@ -21,6 +22,7 @@ func NewProcessor[T any]() *Processor[T] {
 }
 
 func (p *Processor[T]) Parse(ctx context.Context, payload string) (*T, error) {
+	log.Println("Parsing payload:", payload)
 	// parse from json
 	var data T
 	err := json.Unmarshal([]byte(payload), &data)
