@@ -37,7 +37,7 @@ func (a *AnimeRepository) Upsert(anime *Anime, oldTitle *string) error {
 		}
 		return nil
 	}
-	anime.ID = existingAnime.ID
+
 	err = a.db.DB.Save(anime).Error
 	if err != nil {
 		return err
