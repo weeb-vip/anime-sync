@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
+	"github.com/weeb-vip/anime-sync/internal/logger"
 	"github.com/weeb-vip/anime-sync/internal/producer"
-	"log"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 )
@@ -37,6 +38,7 @@ func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB, producer producer.P
 }
 
 func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload) error {
+	log := logger.FromCtx(ctx)
 
 	if data.Before == nil && data.After != nil {
 		// add to db
@@ -76,6 +78,8 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 				Type: DataTypeAnime,
 			},
 		}
+
+		log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 		jsonImage, err := json.Marshal(payload)
 		if err != nil {
 			return err
@@ -161,6 +165,8 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 				Type: DataTypeAnime,
 			},
 		}
+
+		log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 		jsonImage, err := json.Marshal(payload)
 		if err != nil {
 			return err
