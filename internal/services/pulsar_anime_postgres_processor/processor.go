@@ -109,7 +109,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		err = p.Repository.Delete(oldAnime)
 		if err != nil {
 			if p.Options.NoErrorOnDelete {
-				log.Println("WARN: error deleting from db: ", err)
+				log.Warn("WARN: error deleting from db: ", zap.Error(err))
 				return nil
 			} else {
 				return err
@@ -184,7 +184,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 	}
 
 	if data.Before != nil && data.After == nil {
-		log.Println("WARN: data.After is nil, skipping update")
+		log.Warn("WARN: data.After is nil, skipping update")
 	}
 
 	return nil
