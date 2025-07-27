@@ -20,7 +20,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags '-linkmode external -extldflags "-static"' -a -installsuffix cgo -o main ./cmd/main.go
 
 # Path: Dockerfile
 # golang dockerfile
@@ -30,7 +30,6 @@ EXPOSE 3000
 # Set the Current Working Directory inside the container
 WORKDIR /app
 
-COPY --from=builder /usr/lib/x86_64-linux-gnu/librdkafka.so.* /usr/lib/
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder --chown=nonroot:nonroot /app/main .
 
