@@ -45,11 +45,15 @@ func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB, producer producer.P
 func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
 
+	log.Info("Gettting flagsmith client from context")
 	flagsmithClient, _ := ctx.Value(internal.FFClient{}).(*flagsmith.Client)
 
+	log.Info("Getting environment flags from flagsmith client")
 	flags, _ := flagsmithClient.GetEnvironmentFlags()
 
+	log.Info("Checking if feature 'enable_kafka' is enabled")
 	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
+	log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
 
 	if data.Before == nil && data.After != nil {
 		// add to db
@@ -103,6 +107,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 
 		if data.After.ImageUrl != nil {
 			if isEnabled {
+				log.Info("Sending image to Kafka", zap.String("imageURL", *data.After.ImageUrl))
 				err = p.KafkaProducer(ctx, &kafka.Message{
 					Value: jsonImage,
 				})
@@ -195,6 +200,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		}
 		if data.After.ImageUrl != nil {
 			if isEnabled {
+				log.Info("Sending image to Kafka producer", zap.String("title", title), zap.String("imageURL", imageURL))
 				err = p.KafkaProducer(ctx, &kafka.Message{
 					Value: jsonImage,
 				})
