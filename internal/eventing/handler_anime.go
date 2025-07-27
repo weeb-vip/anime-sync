@@ -9,6 +9,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/config"
+	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/logger"
 	"github.com/weeb-vip/anime-sync/internal/producer"
@@ -57,7 +58,7 @@ func EventingAnime() error {
 	algoliaProducer := producer.NewProducer[pulsar_anime_postgres_processor.ProducerPayload](ctx, cfg.PulsarConfig, cfg.PulsarConfig.ProducerAlgoliaTopic)
 	imageProducer := producer.NewProducer[pulsar_anime_postgres_processor.ImagePayload](ctx, cfg.PulsarConfig, cfg.PulsarConfig.ProducerImageTopic)
 
-	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimePostgresProcessor(posgresProcessorOptions, database, algoliaProducer, imageProducer)
+	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimePostgresProcessor(posgresProcessorOptions, database, algoliaProducer, imageProducer, kafkaProducer(ctx, driver, cfg.KafkaConfig.Topic))
 
 	messageProcessor := processor.NewProcessor[pulsar_anime_postgres_processor.Payload]()
 
@@ -81,7 +82,7 @@ func addFFToCtx(ctx context.Context, cfg config.Config) context.Context {
 		flagsmith.WithContext(ctx))
 
 	// create value in context to store flagsmith client
-	return context.WithValue(ctx, "ffClient", ffClient)
+	return context.WithValue(ctx, internal.FFClient{}, ffClient)
 }
 
 func kafkaProducer(ctx context.Context, driver drivers.Driver[*kafka.Message], topic string) func(ctx context.Context, message *kafka.Message) error {

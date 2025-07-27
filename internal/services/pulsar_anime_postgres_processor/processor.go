@@ -3,6 +3,9 @@ package pulsar_anime_postgres_processor
 import (
 	"context"
 	"encoding/json"
+	"github.com/Flagsmith/flagsmith-go-client/v2"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/logger"
@@ -26,19 +29,27 @@ type PulsarAnimePostgresProcessor struct {
 	Options       Options
 	Producer      producer.Producer[Schema]
 	ProducerImage producer.Producer[ImageSchema]
+	KafkaProducer func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB, producer producer.Producer[Schema], producerImage producer.Producer[ImageSchema]) PulsarAnimePostgresProcessorImpl {
+func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB, producer producer.Producer[Schema], producerImage producer.Producer[ImageSchema], kafkaProducer func(ctx context.Context, message *kafka.Message) error) PulsarAnimePostgresProcessorImpl {
 	return &PulsarAnimePostgresProcessor{
 		Repository:    anime.NewAnimeRepository(db),
 		Options:       opt,
 		Producer:      producer,
 		ProducerImage: producerImage,
+		KafkaProducer: kafkaProducer,
 	}
 }
 
 func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
+
+	flagsmithClient, _ := ctx.Value(internal.FFClient{}).(*flagsmith.Client)
+
+	flags, _ := flagsmithClient.GetEnvironmentFlags()
+
+	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
 
 	if data.Before == nil && data.After != nil {
 		// add to db
@@ -91,11 +102,18 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		}
 
 		if data.After.ImageUrl != nil {
-			err = p.ProducerImage.Send(ctx, jsonImage)
+			if isEnabled {
+				err = p.KafkaProducer(ctx, &kafka.Message{
+					Value: jsonImage,
+				})
+			} else {
+				err = p.ProducerImage.Send(ctx, jsonImage)
+			}
 
 			if err != nil {
 				return err
 			}
+
 		}
 	}
 
@@ -176,7 +194,14 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 			return err
 		}
 		if data.After.ImageUrl != nil {
-			err = p.ProducerImage.Send(ctx, jsonImage)
+			if isEnabled {
+				err = p.KafkaProducer(ctx, &kafka.Message{
+					Value: jsonImage,
+				})
+			} else {
+				err = p.ProducerImage.Send(ctx, jsonImage)
+			}
+
 			if err != nil {
 				return err
 			}
