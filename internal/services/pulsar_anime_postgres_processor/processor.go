@@ -94,7 +94,6 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 			},
 		}
 
-		log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 		jsonImage, err := json.Marshal(payload)
 		if err != nil {
 			return err
@@ -106,6 +105,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		}
 
 		if data.After.ImageUrl != nil {
+			log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 			if isEnabled {
 				log.Info("Sending image to Kafka", zap.String("imageURL", *data.After.ImageUrl))
 				err = p.KafkaProducer(ctx, &kafka.Message{
@@ -189,7 +189,6 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 			},
 		}
 
-		log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 		jsonImage, err := json.Marshal(payload)
 		if err != nil {
 			return err
@@ -199,6 +198,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 			return err
 		}
 		if data.After.ImageUrl != nil {
+			log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 			if isEnabled {
 				log.Info("Sending image to Kafka producer", zap.String("title", title), zap.String("imageURL", imageURL))
 				err = p.KafkaProducer(ctx, &kafka.Message{
