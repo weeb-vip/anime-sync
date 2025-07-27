@@ -89,6 +89,7 @@ func addFFToCtx(ctx context.Context, cfg config.Config) context.Context {
 func kafkaProducer(ctx context.Context, driver drivers.Driver[*kafka.Message], topic string) func(ctx context.Context, message *kafka.Message) error {
 	return func(ctx context.Context, message *kafka.Message) error {
 		log := logger.FromCtx(ctx)
+		log.Info("Producing message to Kafka", zap.String("topic", topic), zap.String("key", string(message.Key)), zap.String("value", string(message.Value)))
 		if err := driver.Produce(ctx, topic, message); err != nil {
 			log.Error("Failed to produce message", zap.String("topic", topic), zap.Error(err))
 			return err
