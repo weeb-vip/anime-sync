@@ -30,6 +30,7 @@ EXPOSE 3000
 # Set the Current Working Directory inside the container
 WORKDIR /app
 
+COPY --from=builder /usr/lib/x86_64-linux-gnu/librdkafka.so.* /usr/lib/
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder --chown=nonroot:nonroot /app/main .
 
