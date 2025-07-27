@@ -8,6 +8,8 @@ type Config struct {
 	AppConfig    AppConfig
 	DBConfig     DBConfig
 	PulsarConfig PulsarConfig
+	KafkaConfig  KafkaConfig
+	FFConfig     FFConfig
 }
 
 type AppConfig struct {
@@ -31,6 +33,17 @@ type PulsarConfig struct {
 	SubscribtionName     string `default:"my-sub" env:"PULSARSUBSCRIPTIONNAME"`
 	ProducerAlgoliaTopic string `default:"public/default/myanimelist.public.anime-algolia" env:"PULSARALGOLIATOPIC"`
 	ProducerImageTopic   string `default:"public/default/myanimelist.public.anime-image" env:"PULSARIMAGETOPIC"`
+}
+
+type KafkaConfig struct {
+	ConsumerGroupName string `default:"image-sync-group" env:"KAFKA_CONSUMER_GROUP_NAME"`
+	BootstrapServers  string `default:"localhost:9092" env:"KAFKA_BOOTSTRAP_SERVERS"`
+	Topic             string `default:"image-sync-topic" env:"KAFKA_TOPIC"`
+}
+
+type FFConfig struct {
+	APIKey  string `default:"" env:"FF_API_KEY"`
+	BaseURL string `default:"http://flagsmith-api.weeb.svc.cluster.local" env:"FF_BASE_URL"`
 }
 
 func LoadConfigOrPanic() Config {
