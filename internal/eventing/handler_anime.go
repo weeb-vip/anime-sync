@@ -23,6 +23,7 @@ func EventingAnime() error {
 	cfg := config.LoadConfigOrPanic()
 	ctx := context.Background()
 	log := logger.Get()
+	ctx = logger.WithCtx(ctx, log)
 
 	ctx = addFFToCtx(ctx, cfg)
 
