@@ -3,13 +3,11 @@ package eventing
 import (
 	"context"
 	"fmt"
-	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/drivers"
 	epKafka "github.com/ThatCatDev/ep/v2/drivers/kafka"
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/config"
-	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/logger"
 	"github.com/weeb-vip/anime-sync/internal/producer"
@@ -59,7 +57,7 @@ func EventingAnime() error {
 	algoliaProducer := producer.NewProducer[pulsar_anime_postgres_processor.ProducerPayload](ctx, cfg.PulsarConfig, cfg.PulsarConfig.ProducerAlgoliaTopic)
 	imageProducer := producer.NewProducer[pulsar_anime_postgres_processor.ImagePayload](ctx, cfg.PulsarConfig, cfg.PulsarConfig.ProducerImageTopic)
 
-	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimePostgresProcessor(posgresProcessorOptions, database, algoliaProducer, imageProducer, kafkaProducer(ctx, driver, cfg.KafkaConfig.Topic))
+	postgresProcessor := pulsar_anime_postgres_processor.NewPulsarAnimePostgresProcessor(posgresProcessorOptions, database, algoliaProducer, imageProducer, kafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
 
 	messageProcessor := processor.NewProcessor[pulsar_anime_postgres_processor.Payload]()
 
@@ -75,25 +73,4 @@ func EventingAnime() error {
 	}
 
 	return err
-}
-
-func addFFToCtx(ctx context.Context, cfg config.Config) context.Context {
-	ffClient := flagsmith.NewClient(cfg.FFConfig.APIKey,
-		flagsmith.WithBaseURL(cfg.FFConfig.BaseURL),
-		flagsmith.WithContext(ctx))
-
-	// create value in context to store flagsmith client
-	return context.WithValue(ctx, internal.FFClient{}, ffClient)
-}
-
-func kafkaProducer(ctx context.Context, driver drivers.Driver[*kafka.Message], topic string) func(ctx context.Context, message *kafka.Message) error {
-	return func(ctx context.Context, message *kafka.Message) error {
-		log := logger.FromCtx(ctx)
-		log.Info("Producing message to Kafka", zap.String("topic", topic), zap.String("key", string(message.Key)), zap.String("value", string(message.Value)))
-		if err := driver.Produce(ctx, topic, message); err != nil {
-			log.Error("Failed to produce message", zap.String("topic", topic), zap.Error(err))
-			return err
-		}
-		return nil
-	}
 }
