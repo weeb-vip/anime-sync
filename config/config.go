@@ -41,6 +41,7 @@ type KafkaConfig struct {
 	Offset            string `default:"earliest" env:"KAFKA_OFFSET"`
 	Topic             string `default:"anime-db.public.anime" env:"KAFKA_TOPIC"`
 	ProducerTopic     string `default:"image-sync" env:"KAFKA_PRODUCER_TOPIC"`
+	AlgoliaTopic      string `default:"algolia-sync" env:"KAFKA_ALGOLIA_TOPIC"`
 }
 
 type FFConfig struct {

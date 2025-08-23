@@ -10,7 +10,6 @@ import (
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/logger"
-	"github.com/weeb-vip/anime-sync/internal/producer"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -27,11 +26,11 @@ type AnimeProcessor interface {
 type AnimeProcessorImpl struct {
 	Repository      anime.AnimeRepositoryImpl
 	Options         Options
-	AlgoliaProducer producer.Producer[Schema]
+	AlgoliaProducer func(ctx context.Context, message *kafka.Message) error
 	Producer        func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewAnimeProcessor(opt Options, db *db.DB, algoliaProducer producer.Producer[Schema], producer func(ctx context.Context, message *kafka.Message) error) AnimeProcessor {
+func NewAnimeProcessor(opt Options, db *db.DB, algoliaProducer func(ctx context.Context, message *kafka.Message) error, producer func(ctx context.Context, message *kafka.Message) error) AnimeProcessor {
 	return &AnimeProcessorImpl{
 		Repository:      anime.NewAnimeRepository(db),
 		Options:         opt,
@@ -99,7 +98,9 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 			return data, err
 		}
 
-		err = p.AlgoliaProducer.Send(ctx, jsonAnime)
+		err = p.AlgoliaProducer(ctx, &kafka.Message{
+			Value: jsonAnime,
+		})
 		if err != nil {
 			return data, err
 		}
@@ -189,7 +190,9 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		if err != nil {
 			return data, err
 		}
-		err = p.AlgoliaProducer.Send(ctx, jsonAnime)
+		err = p.AlgoliaProducer(ctx, &kafka.Message{
+			Value: jsonAnime,
+		})
 		if err != nil {
 			return data, err
 		}

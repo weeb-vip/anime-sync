@@ -12,9 +12,7 @@ import (
 	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/logger"
-	"github.com/weeb-vip/anime-sync/internal/producer"
 	"github.com/weeb-vip/anime-sync/internal/services/anime_processor"
-	"github.com/weeb-vip/anime-sync/internal/services/pulsar_anime_postgres_processor"
 	"go.uber.org/zap"
 )
 
@@ -55,9 +53,7 @@ func EventingAnimeKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	algoliaProducer := producer.NewProducer[pulsar_anime_postgres_processor.ProducerPayload](ctx, cfg.PulsarConfig, cfg.PulsarConfig.ProducerAlgoliaTopic)
-
-	postgresProcessor := anime_processor.NewAnimeProcessor(posgresProcessorOptions, database, algoliaProducer, kafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
+	postgresProcessor := anime_processor.NewAnimeProcessor(posgresProcessorOptions, database, kafkaProducer(ctx, driver, cfg.KafkaConfig.AlgoliaTopic), kafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
 
 	processorInstance := processor.NewProcessor[*kafka.Message, anime_processor.Payload](driver, cfg.KafkaConfig.Topic, postgresProcessor.Process)
 
