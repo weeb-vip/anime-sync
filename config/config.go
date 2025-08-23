@@ -38,6 +38,7 @@ type PulsarConfig struct {
 type KafkaConfig struct {
 	ConsumerGroupName string `default:"image-sync-group" env:"KAFKA_CONSUMER_GROUP_NAME"`
 	BootstrapServers  string `default:"localhost:9092" env:"KAFKA_BOOTSTRAP_SERVERS"`
+	Offset            string `default:"earliest" env:"KAFKA_OFFSET"`
 	Topic             string `default:"anime-db.public.anime" env:"KAFKA_TOPIC"`
 	ProducerTopic     string `default:"image-sync" env:"KAFKA_PRODUCER_TOPIC"`
 }

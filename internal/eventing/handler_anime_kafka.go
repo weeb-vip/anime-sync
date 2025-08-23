@@ -34,7 +34,7 @@ func EventingAnimeKafka() error {
 		Username:                 nil,
 		Password:                 nil,
 		ConsumerSessionTimeoutMs: nil,
-		ConsumerAutoOffsetReset:  nil,
+		ConsumerAutoOffsetReset:  &cfg.KafkaConfig.Offset,
 		ClientID:                 nil,
 		Debug:                    nil,
 	}
