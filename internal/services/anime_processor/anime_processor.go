@@ -69,6 +69,7 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 			Data:   payload.After,
 		})
 		if err != nil {
+			log.Error("Error marshalling payload", zap.Error(err))
 			return data, err
 		}
 		var title string
@@ -95,6 +96,7 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 
 		jsonImage, err := json.Marshal(imagePayload)
 		if err != nil {
+			log.Error("Error marshalling image payload", zap.Error(err))
 			return data, err
 		}
 
@@ -102,6 +104,7 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 			Value: jsonAnime,
 		})
 		if err != nil {
+			log.Error("Error sending message to algolia producer", zap.Error(err))
 			return data, err
 		}
 
@@ -113,6 +116,7 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 			})
 
 			if err != nil {
+				log.Error("Error sending message to Kafka producer", zap.Error(err))
 				return data, err
 			}
 
