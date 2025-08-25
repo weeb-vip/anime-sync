@@ -155,12 +155,15 @@ func (f *TransformMiddleware[DM, M]) Process(ctx context.Context, data event.Eve
 
 			log.Info("Decoding base64 value", zap.String("decodedBytes", string(decodedBytes)))
 
-			var payload anime_processor.Payload
-			if err := json.Unmarshal(decodedBytes, &payload); err != nil {
+			var debeziumMessage struct {
+				Schema  interface{}                `json:"schema"`
+				Payload anime_processor.Payload `json:"payload"`
+			}
+			if err := json.Unmarshal(decodedBytes, &debeziumMessage); err != nil {
 				log.Error("Failed to unmarshal decoded payload", zap.Error(err))
 				return nil, err
 			}
-			data.Payload = payload
+			data.Payload = debeziumMessage.Payload
 
 			log.Info("Successfully decoded base64 value and updated payload", zap.Any("payload", data.Payload))
 		} else {
