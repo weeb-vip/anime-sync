@@ -54,6 +54,9 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
 	log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
 
+	// log the payload
+	log.Debug("Payload", zap.Any("payload", payload))
+
 	if payload.Before == nil && payload.After != nil {
 		// add to db
 		newAnime, err := p.parseToEntity(ctx, *payload.After)

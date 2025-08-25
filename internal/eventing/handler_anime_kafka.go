@@ -2,9 +2,12 @@ package eventing
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/drivers"
 	epKafka "github.com/ThatCatDev/ep/v2/drivers/kafka"
+	"github.com/ThatCatDev/ep/v2/event"
+	"github.com/ThatCatDev/ep/v2/middleware"
 	"github.com/ThatCatDev/ep/v2/middlewares/kafka/backoffretry"
 	"github.com/ThatCatDev/ep/v2/processor"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -65,7 +68,10 @@ func EventingAnimeKafka() error {
 	})
 
 	log.Info("Starting Kafka processor", zap.String("topic", cfg.KafkaConfig.Topic))
+	// create middleware to log errors and continue processing
+
 	err := processorInstance.
+		AddMiddleware(NewLoggerMiddleware[*kafka.Message, anime_processor.Payload]().Process).
 		AddMiddleware(backoffRetryInstance.Process).
 		Run(ctx)
 
@@ -96,4 +102,25 @@ func kafkaProducer(ctx context.Context, driver drivers.Driver[*kafka.Message], t
 		}
 		return nil
 	}
+}
+
+type LoggerMiddleware[DM any, M any] struct{}
+
+func NewLoggerMiddleware[DM any, M any]() *LoggerMiddleware[DM, M] {
+	return &LoggerMiddleware[DM, M]{}
+}
+
+func (f *LoggerMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, anime_processor.Payload], next middleware.Handler[*kafka.Message, anime_processor.Payload]) (*event.Event[*kafka.Message, anime_processor.Payload], error) {
+	// if error log it
+	log := logger.FromCtx(ctx)
+	// payload to json
+	jsonPayload, err := json.Marshal(data)
+	log.Info("Processing message", zap.String("value", string(jsonPayload)))
+	result, err := next(ctx, data)
+	if err != nil {
+		log.Error("Error processing message", zap.String("value", string(jsonPayload)), zap.Error(err))
+	} else {
+		log.Info("Successfully processed message", zap.String("value", string(jsonPayload)))
+	}
+	return result, err
 }
