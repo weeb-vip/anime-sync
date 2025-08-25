@@ -115,10 +115,16 @@ func NewLoggerMiddleware[DM any, M any]() *LoggerMiddleware[DM, M] {
 func (f *LoggerMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, anime_processor.Payload], next middleware.Handler[*kafka.Message, anime_processor.Payload]) (*event.Event[*kafka.Message, anime_processor.Payload], error) {
 	// if error log it
 	log := logger.FromCtx(ctx)
-	// payload to json
-	jsonPayload, err := json.Marshal(data.Payload)
-	log.Info("Processing message", zap.String("value", string(jsonPayload)))
+
 	result, err := next(ctx, data)
+	if err != nil {
+		log.Error("Error processing message", zap.Error(err))
+	} else {
+		log.Info("Message processed successfully")
+	}
+
+	jsonPayload, err := json.Marshal(result.Payload)
+	log.Info("Processing message", zap.String("value", string(jsonPayload)))
 	if err != nil {
 		log.Error("Error processing message", zap.String("value", string(jsonPayload)), zap.Error(err))
 	} else {
