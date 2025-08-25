@@ -112,7 +112,7 @@ func NewLoggerMiddleware[DM any, M any]() *LoggerMiddleware[DM, M] {
 	return &LoggerMiddleware[DM, M]{}
 }
 
-func (f *LoggerMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, anime_processor.Payload], next middleware.Handler[*kafka.Message, anime_processor.Payload]) (*event.Event[*kafka.Message, anime_processor.Payload], error) {
+func (f *LoggerMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, M], next middleware.Handler[*kafka.Message, M]) (*event.Event[*kafka.Message, M], error) {
 	// if error log it
 	log := logger.FromCtx(ctx)
 
@@ -140,7 +140,7 @@ func NewTransformMiddleware[DM any, M any]() *TransformMiddleware[DM, M] {
 	return &TransformMiddleware[DM, M]{}
 }
 
-func (f *TransformMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, anime_processor.Payload], next middleware.Handler[*kafka.Message, anime_processor.Payload]) (*event.Event[*kafka.Message, anime_processor.Payload], error) {
+func (f *TransformMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, M], next middleware.Handler[*kafka.Message, M]) (*event.Event[*kafka.Message, M], error) {
 	log := logger.FromCtx(ctx)
 	log.Info("starting TransformMiddleware")
 
@@ -156,14 +156,19 @@ func (f *TransformMiddleware[DM, M]) Process(ctx context.Context, data event.Eve
 			log.Info("Decoding base64 value", zap.String("decodedBytes", string(decodedBytes)))
 
 			var debeziumMessage struct {
-				Schema  interface{}                `json:"schema"`
-				Payload anime_processor.Payload `json:"payload"`
+				Schema  interface{} `json:"schema"`
+				Payload M           `json:"payload"`
 			}
 			if err := json.Unmarshal(decodedBytes, &debeziumMessage); err != nil {
 				log.Error("Failed to unmarshal decoded payload", zap.Error(err))
 				return nil, err
 			}
-			data.Payload = debeziumMessage.Payload
+			if payload, ok := interface{}(debeziumMessage.Payload).(M); ok {
+				data.Payload = payload
+			} else {
+				log.Error("Failed to cast payload to expected type")
+				return nil, err
+			}
 
 			log.Info("Successfully decoded base64 value and updated payload", zap.Any("payload", data.Payload))
 		} else {
