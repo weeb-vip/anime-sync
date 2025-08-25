@@ -2,6 +2,7 @@ package eventing
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/drivers"
@@ -72,6 +73,7 @@ func EventingAnimeKafka() error {
 
 	err := processorInstance.
 		AddMiddleware(NewLoggerMiddleware[*kafka.Message, anime_processor.Payload]().Process).
+		AddMiddleware(NewTransformMiddleware[*kafka.Message, anime_processor.Payload]().Process).
 		AddMiddleware(backoffRetryInstance.Process).
 		Run(ctx)
 
@@ -123,4 +125,38 @@ func (f *LoggerMiddleware[DM, M]) Process(ctx context.Context, data event.Event[
 		log.Info("Successfully processed message", zap.String("value", string(jsonPayload)))
 	}
 	return result, err
+}
+
+type TransformMiddleware[DM any, M any] struct {
+}
+
+func NewTransformMiddleware[DM any, M any]() *TransformMiddleware[DM, M] {
+	return &TransformMiddleware[DM, M]{}
+}
+
+func (f *TransformMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, anime_processor.Payload], next middleware.Handler[*kafka.Message, anime_processor.Payload]) (*event.Event[*kafka.Message, anime_processor.Payload], error) {
+	log := logger.FromCtx(ctx)
+
+	if valueRaw, exists := data.RawData["Value"]; exists {
+		if valueStr, ok := valueRaw.(string); ok {
+			decodedBytes, err := base64.StdEncoding.DecodeString(valueStr)
+			if err != nil {
+				log.Error("Failed to decode base64 value", zap.Error(err))
+				return nil, err
+			}
+
+			if err := json.Unmarshal(decodedBytes, &data.Payload); err != nil {
+				log.Error("Failed to unmarshal decoded payload", zap.Error(err))
+				return nil, err
+			}
+
+			log.Info("Successfully decoded base64 value and updated payload")
+		} else {
+			log.Warn("Value in RawData is not a string")
+		}
+	} else {
+		log.Warn("Value key not found in RawData")
+	}
+
+	return next(ctx, data)
 }
