@@ -145,20 +145,22 @@ func (f *TransformMiddleware[DM, M]) Process(ctx context.Context, data event.Eve
 	log.Info("starting TransformMiddleware")
 
 	if valueRaw, exists := data.RawData["Value"]; exists {
-		log.Info("Value key found in RawData", zap.Any("value", valueRaw))
 		if valueStr, ok := valueRaw.(string); ok {
+			log.Info("Value key found in RawData", zap.Any("value", valueRaw))
 			decodedBytes, err := base64.StdEncoding.DecodeString(valueStr)
 			if err != nil {
 				log.Error("Failed to decode base64 value", zap.Error(err))
 				return nil, err
 			}
 
+			log.Info("Decoding base64 value", zap.String("decodedBytes", string(decodedBytes)))
+
 			if err := json.Unmarshal(decodedBytes, &data.Payload); err != nil {
 				log.Error("Failed to unmarshal decoded payload", zap.Error(err))
 				return nil, err
 			}
 
-			log.Info("Successfully decoded base64 value and updated payload")
+			log.Info("Successfully decoded base64 value and updated payload", zap.Any("payload", data.Payload))
 		} else {
 			log.Warn("Value in RawData is not a string")
 		}
