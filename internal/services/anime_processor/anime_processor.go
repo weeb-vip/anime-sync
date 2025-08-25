@@ -123,6 +123,8 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 				return data, err
 			}
 
+		} else {
+			log.Warn("ImageURL is nil, skipping image producer")
 		}
 	}
 
@@ -214,6 +216,8 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 			if err != nil {
 				return data, err
 			}
+		} else {
+			log.Warn("ImageURL is nil, skipping image producer")
 		}
 	}
 

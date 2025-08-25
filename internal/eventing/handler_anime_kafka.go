@@ -114,7 +114,7 @@ func (f *LoggerMiddleware[DM, M]) Process(ctx context.Context, data event.Event[
 	// if error log it
 	log := logger.FromCtx(ctx)
 	// payload to json
-	jsonPayload, err := json.Marshal(data)
+	jsonPayload, err := json.Marshal(data.Payload)
 	log.Info("Processing message", zap.String("value", string(jsonPayload)))
 	result, err := next(ctx, data)
 	if err != nil {
