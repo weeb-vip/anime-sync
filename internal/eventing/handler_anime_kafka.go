@@ -142,8 +142,10 @@ func NewTransformMiddleware[DM any, M any]() *TransformMiddleware[DM, M] {
 
 func (f *TransformMiddleware[DM, M]) Process(ctx context.Context, data event.Event[*kafka.Message, anime_processor.Payload], next middleware.Handler[*kafka.Message, anime_processor.Payload]) (*event.Event[*kafka.Message, anime_processor.Payload], error) {
 	log := logger.FromCtx(ctx)
+	log.Info("starting TransformMiddleware")
 
 	if valueRaw, exists := data.RawData["Value"]; exists {
+		log.Info("Value key found in RawData", zap.Any("value", valueRaw))
 		if valueStr, ok := valueRaw.(string); ok {
 			decodedBytes, err := base64.StdEncoding.DecodeString(valueStr)
 			if err != nil {
