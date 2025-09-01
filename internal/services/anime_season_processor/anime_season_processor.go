@@ -26,15 +26,13 @@ type AnimeSeasonProcessorImpl struct {
 	Repository      anime_season.AnimeSeasonRepositoryImpl
 	Options         Options
 	AlgoliaProducer func(ctx context.Context, message *kafka.Message) error
-	Producer        func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewAnimeSeasonProcessor(opt Options, db *db.DB, algoliaProducer func(ctx context.Context, message *kafka.Message) error, producer func(ctx context.Context, message *kafka.Message) error) AnimeSeasonProcessor {
+func NewAnimeSeasonProcessor(opt Options, db *db.DB, algoliaProducer func(ctx context.Context, message *kafka.Message) error) AnimeSeasonProcessor {
 	return &AnimeSeasonProcessorImpl{
 		Repository:      anime_season.NewAnimeSeasonRepository(db),
 		Options:         opt,
 		AlgoliaProducer: algoliaProducer,
-		Producer:        producer,
 	}
 }
 
@@ -65,7 +63,7 @@ func (p *AnimeSeasonProcessorImpl) Process(ctx context.Context, data event.Event
 		if err != nil {
 			return data, err
 		}
-		
+
 		jsonAnimeSeason, err := json.Marshal(ProducerPayload{
 			Action: CreateAction,
 			Data:   payload.After,
@@ -109,12 +107,12 @@ func (p *AnimeSeasonProcessorImpl) Process(ctx context.Context, data event.Event
 		if err != nil {
 			return data, err
 		}
-		
+
 		err = p.Repository.Upsert(newAnimeSeason)
 		if err != nil {
 			return data, err
 		}
-		
+
 		jsonAnimeSeason, err := json.Marshal(ProducerPayload{
 			Action: UpdateAction,
 			Data:   payload.After,
@@ -122,7 +120,7 @@ func (p *AnimeSeasonProcessorImpl) Process(ctx context.Context, data event.Event
 		if err != nil {
 			return data, err
 		}
-		
+
 		err = p.AlgoliaProducer(ctx, &kafka.Message{
 			Value: jsonAnimeSeason,
 		})

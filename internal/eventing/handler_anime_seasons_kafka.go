@@ -2,18 +2,12 @@ package eventing
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/drivers"
 	epKafka "github.com/ThatCatDev/ep/v2/drivers/kafka"
-	"github.com/ThatCatDev/ep/v2/event"
-	"github.com/ThatCatDev/ep/v2/middleware"
 	"github.com/ThatCatDev/ep/v2/middlewares/kafka/backoffretry"
 	"github.com/ThatCatDev/ep/v2/processor"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/config"
-	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/logger"
 	"github.com/weeb-vip/anime-sync/internal/services/anime_season_processor"
@@ -57,7 +51,7 @@ func EventingAnimeSeasonKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	postgresProcessor := anime_season_processor.NewAnimeSeasonProcessor(postgresProcessorOptions, database, kafkaProducer(ctx, driver, cfg.KafkaConfig.AlgoliaTopic), kafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
+	postgresProcessor := anime_season_processor.NewAnimeSeasonProcessor(postgresProcessorOptions, database, kafkaProducer(ctx, driver, cfg.KafkaConfig.AlgoliaTopic))
 
 	processorInstance := processor.NewProcessor[*kafka.Message, anime_season_processor.Payload](driver, cfg.KafkaConfig.Topic, postgresProcessor.Process)
 
