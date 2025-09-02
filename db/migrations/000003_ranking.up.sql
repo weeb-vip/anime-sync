@@ -1,0 +1,2 @@
+ALTER TABLE anime
+    ADD COLUMN `ranking` INT(11) NULL DEFAULT NULL AFTER `status`;

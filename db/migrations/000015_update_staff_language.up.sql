@@ -1,0 +1,1 @@
+ALTER TABLE anime_staff ADD COLUMN language VARCHAR(30) DEFAULT NULL;

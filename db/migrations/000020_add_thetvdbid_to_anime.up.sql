@@ -1,0 +1,1 @@
+ALTER TABLE anime ADD COLUMN thetvdbid VARCHAR(255) NULL AFTER anidbid;

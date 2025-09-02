@@ -1,1 +1,0 @@
-ALTER TABLE anime ADD COLUMN thetvdbid varchar(255) NULL;

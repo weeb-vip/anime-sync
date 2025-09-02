@@ -1,6 +1,7 @@
 package anime
 
 import (
+	"context"
 	"github.com/weeb-vip/anime-sync/internal/db"
 )
 
@@ -20,6 +21,12 @@ func NewAnimeRepository(db *db.DB) AnimeRepositoryImpl {
 }
 
 func (a *AnimeRepository) Upsert(anime *Anime, oldTitle *string) error {
+	// Log the anime struct before saving for debugging
+	if anime.TheTVDBID != nil {
+		a.db.DB.Logger.Info(context.Background(), "Upserting anime with TheTVDBID: ID=%s, TheTVDBID=%s", anime.ID, *anime.TheTVDBID)
+	} else {
+		a.db.DB.Logger.Info(context.Background(), "Upserting anime without TheTVDBID: ID=%s", anime.ID)
+	}
 
 	err := a.db.DB.Save(anime).Error
 	if err != nil {
