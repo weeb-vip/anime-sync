@@ -261,6 +261,7 @@ func (p *AnimeProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*a
 	newAnime.ID = data.ID
 	newAnime.Ranking = data.Ranking
 	newAnime.AnidbID = data.AnidbID
+	newAnime.TheTVDBID = data.TheTVDBID
 	newAnime.Type = record_type
 	newAnime.TitleEn = data.TitleEn
 	newAnime.TitleJp = data.TitleJp
