@@ -3,6 +3,7 @@ package pulsar_anime_postgres_processor
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/internal"
@@ -45,11 +46,27 @@ func NewPulsarAnimePostgresProcessor(opt Options, db *db.DB, producer producer.P
 func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
 
-	log.Info("Gettting flagsmith client from context")
-	flagsmithClient, _ := ctx.Value(internal.FFClient{}).(*flagsmith.Client)
+	log.Info("Getting flagsmith client from context")
+	flagsmithClientInterface := ctx.Value(internal.FFClient{})
+	if flagsmithClientInterface == nil {
+		log.Error("Flagsmith client not found in context")
+		return fmt.Errorf("flagsmith client not found in context")
+	}
+
+	flagsmithClient, ok := flagsmithClientInterface.(interface {
+		GetEnvironmentFlags() (flagsmith.Flags, error)
+	})
+	if !ok {
+		log.Error("Flagsmith client has wrong type")
+		return fmt.Errorf("flagsmith client has wrong type")
+	}
 
 	log.Info("Getting environment flags from flagsmith client")
-	flags, _ := flagsmithClient.GetEnvironmentFlags()
+	flags, err := flagsmithClient.GetEnvironmentFlags()
+	if err != nil {
+		log.Error("Failed to get environment flags", zap.Error(err))
+		return fmt.Errorf("failed to get environment flags: %w", err)
+	}
 
 	log.Info("Checking if feature 'enable_kafka' is enabled")
 	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
