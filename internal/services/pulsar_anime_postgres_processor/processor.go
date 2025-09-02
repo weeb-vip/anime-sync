@@ -255,6 +255,7 @@ func (p *PulsarAnimePostgresProcessor) parseToEntity(ctx context.Context, data S
 	newAnime.ID = data.ID
 	newAnime.Ranking = data.Ranking
 	newAnime.AnidbID = data.AnidbID
+	newAnime.TheTVDBID = data.TheTVDBID
 	newAnime.Type = record_type
 	newAnime.TitleEn = data.TitleEn
 	newAnime.TitleJp = data.TitleJp

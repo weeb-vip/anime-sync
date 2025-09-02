@@ -15,6 +15,8 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/jinzhu/configor v1.2.1
 	github.com/spf13/cobra v1.8.1
+	github.com/stretchr/testify v1.11.1
+	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/mysql v1.5.0
 	gorm.io/gorm v1.25.0
@@ -33,6 +35,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
@@ -57,6 +60,7 @@ require (
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
@@ -77,4 +81,5 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

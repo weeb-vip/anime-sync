@@ -1,0 +1,1 @@
+ALTER TABLE anime_staff DROP COLUMN language;

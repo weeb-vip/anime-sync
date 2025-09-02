@@ -20,6 +20,25 @@ import (
 	"go.uber.org/zap"
 )
 
+type FlagSmithClient interface {
+	GetEnvironmentFlags() (flagsmith.Flags, error)
+}
+
+type FlagSmithClientImpl struct {
+	Client *flagsmith.Client
+}
+
+func (f *FlagSmithClientImpl) GetEnvironmentFlags() (flagsmith.Flags, error) {
+	return f.Client.GetEnvironmentFlags()
+}
+
+func NewFlagSmithClient(ctx context.Context, apiKey, baseURL string) FlagSmithClient {
+	client := flagsmith.NewClient(apiKey,
+		flagsmith.WithBaseURL(baseURL),
+		flagsmith.WithContext(ctx))
+	return &FlagSmithClientImpl{Client: client}
+}
+
 func EventingAnimeKafka() error {
 	cfg := config.LoadConfigOrPanic()
 	ctx := context.Background()
@@ -86,9 +105,7 @@ func EventingAnimeKafka() error {
 }
 
 func addFFToCtx(ctx context.Context, cfg config.Config) context.Context {
-	ffClient := flagsmith.NewClient(cfg.FFConfig.APIKey,
-		flagsmith.WithBaseURL(cfg.FFConfig.BaseURL),
-		flagsmith.WithContext(ctx))
+	ffClient := NewFlagSmithClient(ctx, cfg.FFConfig.APIKey, cfg.FFConfig.BaseURL)
 
 	// create value in context to store flagsmith client
 	return context.WithValue(ctx, internal.FFClient{}, ffClient)

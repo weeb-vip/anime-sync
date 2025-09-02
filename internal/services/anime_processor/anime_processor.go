@@ -59,10 +59,25 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 
 	if payload.Before == nil && payload.After != nil {
 		// add to db
-		newAnime, err := p.parseToEntity(ctx, *payload.After)
+		// Log the incoming payload for debugging
+		if payload.After.TheTVDBID != nil {
+			log.Info("Create operation with TheTVDBID", zap.String("id", payload.After.ID), zap.String("thetvdbid", *payload.After.TheTVDBID))
+		} else {
+			log.Info("Create operation without TheTVDBID", zap.String("id", payload.After.ID))
+		}
+
+		newAnime, err := p.ParseToEntity(ctx, *payload.After)
 		if err != nil {
 			return data, err
 		}
+
+		// Log the anime entity before saving
+		if newAnime.TheTVDBID != nil {
+			log.Info("Creating anime with TheTVDBID", zap.String("id", newAnime.ID), zap.String("thetvdbid", *newAnime.TheTVDBID))
+		} else {
+			log.Info("Creating anime without TheTVDBID", zap.String("id", newAnime.ID))
+		}
+
 		err = p.Repository.Upsert(newAnime, nil)
 		if err != nil {
 			return data, err
@@ -130,7 +145,7 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 
 	if payload.After == nil && payload.Before != nil {
 		// delete from db
-		oldAnime, err := p.parseToEntity(ctx, *payload.Before)
+		oldAnime, err := p.ParseToEntity(ctx, *payload.Before)
 		if err != nil {
 			return data, err
 		}
@@ -150,7 +165,14 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 
 	if payload.Before != nil && payload.After != nil {
 		// update db
-		newAnime, err := p.parseToEntity(ctx, *payload.After)
+		// Log the incoming payload for debugging
+		if payload.After.TheTVDBID != nil {
+			log.Info("Update operation with TheTVDBID", zap.String("id", payload.After.ID), zap.String("thetvdbid", *payload.After.TheTVDBID))
+		} else {
+			log.Info("Update operation without TheTVDBID", zap.String("id", payload.After.ID))
+		}
+
+		newAnime, err := p.ParseToEntity(ctx, *payload.After)
 		if err != nil {
 			return data, err
 		}
@@ -161,6 +183,14 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		if payload.Before.TitleEn == nil && payload.Before.TitleJp != nil && *payload.Before.TitleJp != *payload.After.TitleJp {
 			oldTitle = payload.Before.TitleJp
 		}
+
+		// Log the anime entity before saving
+		if newAnime.TheTVDBID != nil {
+			log.Info("Saving anime with TheTVDBID", zap.String("id", newAnime.ID), zap.String("thetvdbid", *newAnime.TheTVDBID))
+		} else {
+			log.Info("Saving anime without TheTVDBID", zap.String("id", newAnime.ID))
+		}
+
 		err = p.Repository.Upsert(newAnime, oldTitle)
 		if err != nil {
 			return data, err
@@ -228,7 +258,8 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 	return data, nil
 }
 
-func (p *AnimeProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime.Anime, error) {
+func (p *AnimeProcessorImpl) ParseToEntity(ctx context.Context, data Schema) (*anime.Anime, error) {
+	log := logger.FromCtx(ctx)
 	var newAnime anime.Anime
 
 	var animeStartDate *string
@@ -261,6 +292,7 @@ func (p *AnimeProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*a
 	newAnime.ID = data.ID
 	newAnime.Ranking = data.Ranking
 	newAnime.AnidbID = data.AnidbID
+	newAnime.TheTVDBID = data.TheTVDBID
 	newAnime.Type = record_type
 	newAnime.TitleEn = data.TitleEn
 	newAnime.TitleJp = data.TitleJp
@@ -282,6 +314,13 @@ func (p *AnimeProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*a
 	newAnime.Rating = data.Rating
 	newAnime.CreatedAt = time.Now()
 	newAnime.UpdatedAt = time.Now()
+
+	// Debug logging for TheTVDBID
+	if data.TheTVDBID != nil {
+		log.Info("TheTVDBID received in parseToEntity", zap.String("id", data.ID), zap.String("thetvdbid", *data.TheTVDBID))
+	} else {
+		log.Info("TheTVDBID is nil for anime", zap.String("id", data.ID))
+	}
 
 	return &newAnime, nil
 }
