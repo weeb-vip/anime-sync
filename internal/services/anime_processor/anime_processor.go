@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/event"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -328,7 +329,18 @@ func (p *AnimeProcessorImpl) ParseToEntity(ctx context.Context, data Schema) (*a
 	newAnime.Source = data.Source
 	newAnime.Licensors = data.Licensors
 	newAnime.Studios = data.Studios
-	newAnime.Rating = data.Rating
+
+	// Convert rating from string to float64
+	var animeRating *float64
+	if data.Rating != nil {
+		if ratingFloat, err := strconv.ParseFloat(*data.Rating, 64); err == nil {
+			animeRating = &ratingFloat
+		} else {
+			log.Warn("Failed to parse rating as float", zap.String("rating", *data.Rating), zap.Error(err))
+		}
+	}
+	newAnime.Rating = animeRating
+
 	newAnime.CreatedAt = time.Now()
 	newAnime.UpdatedAt = time.Now()
 
