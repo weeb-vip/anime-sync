@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/event"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
 	"github.com/weeb-vip/anime-sync/config"
@@ -19,6 +19,7 @@ import (
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/logger"
 	"github.com/weeb-vip/anime-sync/internal/services/anime_processor"
+	"github.com/weeb-vip/anime-sync/internal/services/anime_processor/mocks"
 )
 
 // TestRealProcessorWorkflowWithMocks tests the actual processor with proper mocks
@@ -72,14 +73,22 @@ func TestRealProcessorWorkflowWithMocks(t *testing.T) {
 	options := anime_processor.Options{NoErrorOnDelete: false}
 	processor := anime_processor.NewAnimeProcessor(options, database, algoliaProducer, kafkaProducer)
 
-	// Setup context with logger and a real flagsmith client for testing
+	// Setup context with logger and mock flagsmith client
 	log := zap.NewNop()
 	ctx := logger.WithCtx(context.Background(), log)
-	
-	// Create a real Flagsmith client with a test API key
-	// This will work even if the API key is invalid since we're testing offline
-	flagsmithClient := flagsmith.NewClient("test-key-for-integration-tests")
-	ctx = context.WithValue(ctx, internal.FFClient{}, flagsmithClient)
+
+	// Create mock Flagsmith client
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFlagsmith := mocks.NewMockFlagSmithClient(ctrl)
+	mockFlags := mocks.NewMockFlags(ctrl)
+
+	// Setup expectations - allow any number of calls
+	mockFlagsmith.EXPECT().GetEnvironmentFlags().Return(mockFlags, nil).AnyTimes()
+	mockFlags.EXPECT().IsFeatureEnabled("enable_kafka").Return(true, nil).AnyTimes()
+
+	ctx = context.WithValue(ctx, internal.FFClient{}, mockFlagsmith)
 
 	t.Run("TestRealProcessorCreateWithTheTVDBID", func(t *testing.T) {
 		// Reset message collectors
@@ -338,6 +347,257 @@ func TestRealProcessorWorkflowWithMocks(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, anime_processor.CreateAction, producerPayload.Action)
 		assert.Nil(t, producerPayload.Data.TheTVDBID, "TheTVDBID should be nil in producer payload")
+	})
+}
+
+// TestSyncTagsWithJSONGenres tests the syncTags functionality with JSON array genres
+func TestSyncTagsWithJSONGenres(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+
+	// Setup database connection
+	cfg := &config.DBConfig{
+		Host:     "localhost",
+		Port:     3306,
+		User:     "weeb",
+		Password: "mysecretpassword",
+		DataBase: "weeb",
+		SSLMode:  "false",
+	}
+
+	database := db.NewDB(*cfg)
+	require.NotNil(t, database)
+
+	sqlDB, err := database.DB.DB()
+	require.NoError(t, err)
+	err = sqlDB.Ping()
+	require.NoError(t, err, "Database should be accessible")
+
+	// Clean up test data before and after
+	cleanup := func() {
+		database.DB.Exec("DELETE FROM anime_tags WHERE anime_id LIKE ?", "sync-tags-test-%")
+		database.DB.Exec("DELETE FROM tags WHERE name IN (?, ?, ?, ?, ?)", "Drama", "Supernatural", "Suspense", "Action", "Comedy")
+		database.DB.Where("id LIKE ?", "sync-tags-test-%").Delete(&anime.Anime{})
+	}
+	cleanup()
+	defer cleanup()
+
+	// Setup mock producers
+	algoliaProducer := func(ctx context.Context, message *kafka.Message) error {
+		return nil
+	}
+	kafkaProducer := func(ctx context.Context, message *kafka.Message) error {
+		return nil
+	}
+
+	// Create processor
+	options := anime_processor.Options{NoErrorOnDelete: false}
+	processor := anime_processor.NewAnimeProcessor(options, database, algoliaProducer, kafkaProducer)
+
+	// Setup context with mock flagsmith client
+	log := zap.NewNop()
+	ctx := logger.WithCtx(context.Background(), log)
+
+	// Create mock Flagsmith client
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFlagsmith := mocks.NewMockFlagSmithClient(ctrl)
+	mockFlags := mocks.NewMockFlags(ctrl)
+
+	// Setup expectations - allow any number of calls
+	mockFlagsmith.EXPECT().GetEnvironmentFlags().Return(mockFlags, nil).AnyTimes()
+	mockFlags.EXPECT().IsFeatureEnabled("enable_kafka").Return(true, nil).AnyTimes()
+
+	ctx = context.WithValue(ctx, internal.FFClient{}, mockFlagsmith)
+
+	t.Run("CreateAnimeWithJSONGenres", func(t *testing.T) {
+		titleEn := "Sync Tags Test Anime"
+		genres := `["Drama","Supernatural","Suspense"]`
+
+		payload := anime_processor.Payload{
+			Before: nil,
+			After: &anime_processor.Schema{
+				ID:      "sync-tags-test-001",
+				TitleEn: &titleEn,
+				Genres:  &genres,
+			},
+		}
+		eventData := event.Event[*kafka.Message, anime_processor.Payload]{Payload: payload}
+
+		_, err := processor.Process(ctx, eventData)
+		require.NoError(t, err)
+
+		// Verify tags were created and associated
+		var animeTags []struct {
+			AnimeID string
+			TagID   int64
+		}
+		err = database.DB.Table("anime_tags").Where("anime_id = ?", "sync-tags-test-001").Find(&animeTags).Error
+		require.NoError(t, err)
+		assert.Len(t, animeTags, 3, "Should have 3 tags associated")
+
+		// Verify tag names
+		var tagNames []string
+		err = database.DB.Table("tags").
+			Joins("INNER JOIN anime_tags ON tags.id = anime_tags.tag_id").
+			Where("anime_tags.anime_id = ?", "sync-tags-test-001").
+			Pluck("name", &tagNames).Error
+		require.NoError(t, err)
+		assert.Contains(t, tagNames, "Drama")
+		assert.Contains(t, tagNames, "Supernatural")
+		assert.Contains(t, tagNames, "Suspense")
+	})
+
+	t.Run("UpdateAnimeGenres", func(t *testing.T) {
+		titleEn := "Sync Tags Update Test"
+		oldGenres := `["Action","Comedy"]`
+		newGenres := `["Drama","Action"]`
+
+		// Create anime with initial genres
+		createPayload := anime_processor.Payload{
+			Before: nil,
+			After: &anime_processor.Schema{
+				ID:      "sync-tags-test-002",
+				TitleEn: &titleEn,
+				Genres:  &oldGenres,
+			},
+		}
+		createEvent := event.Event[*kafka.Message, anime_processor.Payload]{Payload: createPayload}
+		_, err := processor.Process(ctx, createEvent)
+		require.NoError(t, err)
+
+		// Update with new genres
+		updatePayload := anime_processor.Payload{
+			Before: &anime_processor.Schema{
+				ID:      "sync-tags-test-002",
+				TitleEn: &titleEn,
+				Genres:  &oldGenres,
+			},
+			After: &anime_processor.Schema{
+				ID:      "sync-tags-test-002",
+				TitleEn: &titleEn,
+				Genres:  &newGenres,
+			},
+		}
+		updateEvent := event.Event[*kafka.Message, anime_processor.Payload]{Payload: updatePayload}
+		_, err = processor.Process(ctx, updateEvent)
+		require.NoError(t, err)
+
+		// Verify updated tags
+		var tagNames []string
+		err = database.DB.Table("tags").
+			Joins("INNER JOIN anime_tags ON tags.id = anime_tags.tag_id").
+			Where("anime_tags.anime_id = ?", "sync-tags-test-002").
+			Pluck("name", &tagNames).Error
+		require.NoError(t, err)
+		assert.Len(t, tagNames, 2)
+		assert.Contains(t, tagNames, "Drama")
+		assert.Contains(t, tagNames, "Action")
+		assert.NotContains(t, tagNames, "Comedy", "Comedy should be removed")
+	})
+
+	t.Run("CreateAnimeWithEmptyGenres", func(t *testing.T) {
+		titleEn := "Sync Tags Empty Test"
+		emptyGenres := `[]`
+
+		payload := anime_processor.Payload{
+			Before: nil,
+			After: &anime_processor.Schema{
+				ID:      "sync-tags-test-003",
+				TitleEn: &titleEn,
+				Genres:  &emptyGenres,
+			},
+		}
+		eventData := event.Event[*kafka.Message, anime_processor.Payload]{Payload: payload}
+
+		_, err := processor.Process(ctx, eventData)
+		require.NoError(t, err)
+
+		// Verify no tags were associated
+		var count int64
+		err = database.DB.Table("anime_tags").Where("anime_id = ?", "sync-tags-test-003").Count(&count).Error
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count, "Should have no tags")
+	})
+
+	t.Run("CreateAnimeWithNilGenres", func(t *testing.T) {
+		titleEn := "Sync Tags Nil Test"
+
+		payload := anime_processor.Payload{
+			Before: nil,
+			After: &anime_processor.Schema{
+				ID:      "sync-tags-test-004",
+				TitleEn: &titleEn,
+				Genres:  nil,
+			},
+		}
+		eventData := event.Event[*kafka.Message, anime_processor.Payload]{Payload: payload}
+
+		_, err := processor.Process(ctx, eventData)
+		require.NoError(t, err)
+
+		// Verify no tags were associated
+		var count int64
+		err = database.DB.Table("anime_tags").Where("anime_id = ?", "sync-tags-test-004").Count(&count).Error
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count, "Should have no tags")
+	})
+
+	t.Run("CreateAnimeWithInvalidJSONGenres", func(t *testing.T) {
+		titleEn := "Sync Tags Invalid JSON Test"
+		invalidGenres := `not valid json`
+
+		payload := anime_processor.Payload{
+			Before: nil,
+			After: &anime_processor.Schema{
+				ID:      "sync-tags-test-005",
+				TitleEn: &titleEn,
+				Genres:  &invalidGenres,
+			},
+		}
+		eventData := event.Event[*kafka.Message, anime_processor.Payload]{Payload: payload}
+
+		// Should not error, just log warning and clear tags
+		_, err := processor.Process(ctx, eventData)
+		require.NoError(t, err)
+
+		// Verify no tags were associated (graceful handling)
+		var count int64
+		err = database.DB.Table("anime_tags").Where("anime_id = ?", "sync-tags-test-005").Count(&count).Error
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count, "Should have no tags for invalid JSON")
+	})
+
+	t.Run("GenresWithWhitespace", func(t *testing.T) {
+		titleEn := "Sync Tags Whitespace Test"
+		genres := `["  Action  ", "Comedy ", " Drama"]`
+
+		payload := anime_processor.Payload{
+			Before: nil,
+			After: &anime_processor.Schema{
+				ID:      "sync-tags-test-006",
+				TitleEn: &titleEn,
+				Genres:  &genres,
+			},
+		}
+		eventData := event.Event[*kafka.Message, anime_processor.Payload]{Payload: payload}
+
+		_, err := processor.Process(ctx, eventData)
+		require.NoError(t, err)
+
+		// Verify tags were trimmed
+		var tagNames []string
+		err = database.DB.Table("tags").
+			Joins("INNER JOIN anime_tags ON tags.id = anime_tags.tag_id").
+			Where("anime_tags.anime_id = ?", "sync-tags-test-006").
+			Pluck("name", &tagNames).Error
+		require.NoError(t, err)
+		assert.Len(t, tagNames, 3)
+		assert.Contains(t, tagNames, "Action")
+		assert.Contains(t, tagNames, "Comedy")
+		assert.Contains(t, tagNames, "Drama")
 	})
 }
 

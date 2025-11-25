@@ -6,7 +6,7 @@ UPDATE `anime` SET start_date = formatted_timestamp WHERE formatted_timestamp IS
 ALTER TABLE `anime` DROP COLUMN formatted_timestamp;
 
 ALTER TABLE `anime` ADD COLUMN formatted_timestamp VARCHAR(255);
-UPDATE `anime` SET formatted_timestamp = DATE_FORMAT(end_date, '%Y-%m-%d %H:%i:%s') WHERE end_date IS NOT NULL
+UPDATE `anime` SET formatted_timestamp = DATE_FORMAT(end_date, '%Y-%m-%d %H:%i:%s') WHERE end_date IS NOT NULL;
 ALTER TABLE `anime` DROP COLUMN end_date;
 ALTER TABLE `anime` ADD COLUMN end_date VARCHAR(255);
 UPDATE `anime` SET end_date = formatted_timestamp WHERE formatted_timestamp IS NOT NULL;

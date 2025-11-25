@@ -12,7 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	v2 "github.com/Flagsmith/flagsmith-go-client/v2"
+	anime_processor "github.com/weeb-vip/anime-sync/internal/services/anime_processor"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,10 +41,10 @@ func (m *MockFlagSmithClient) EXPECT() *MockFlagSmithClientMockRecorder {
 }
 
 // GetEnvironmentFlags mocks base method.
-func (m *MockFlagSmithClient) GetEnvironmentFlags() (v2.Flags, error) {
+func (m *MockFlagSmithClient) GetEnvironmentFlags() (anime_processor.Flags, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEnvironmentFlags")
-	ret0, _ := ret[0].(v2.Flags)
+	ret0, _ := ret[0].(anime_processor.Flags)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
