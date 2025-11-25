@@ -59,7 +59,7 @@ func TestTheTVDBIDIntegration(t *testing.T) {
 		thetvdbid := "987654"
 		titleEn := "Test Anime with TheTVDBID"
 		episodes := 12
-		rating := "PG-13"
+		rating := "8.5"
 		startDate := "2024-01-15T09:00:00Z"
 		endDate := "2024-03-30T21:00:00Z"
 
@@ -84,7 +84,8 @@ func TestTheTVDBIDIntegration(t *testing.T) {
 		assert.Equal(t, "thetvdb-test-parse", animeEntity.ID)
 		assert.Equal(t, titleEn, *animeEntity.TitleEn)
 		assert.Equal(t, episodes, *animeEntity.Episodes)
-		assert.Equal(t, rating, *animeEntity.Rating)
+		require.NotNil(t, animeEntity.Rating)
+		assert.Equal(t, 8.5, *animeEntity.Rating)
 
 		// Verify date parsing
 		assert.Contains(t, *animeEntity.StartDate, "2024-01-15")
@@ -466,7 +467,7 @@ func TestProcessorCoreLogicWithTheTVDBID(t *testing.T) {
 		titleRomaji := "Complex Core Test"
 		synopsis := "A comprehensive test anime with TheTVDBID for core logic testing"
 		episodes := 26
-		rating := "R - 17+"
+		rating := "9.2"
 		genres := "Action, Drama, Sci-Fi"
 		startDate := "2024-04-01T00:00:00Z"
 		endDate := "2024-09-30T23:59:59Z"
@@ -497,7 +498,8 @@ func TestProcessorCoreLogicWithTheTVDBID(t *testing.T) {
 		assert.Equal(t, titleRomaji, *complexEntity.TitleRomaji)
 		assert.Equal(t, synopsis, *complexEntity.Synopsis)
 		assert.Equal(t, episodes, *complexEntity.Episodes)
-		assert.Equal(t, rating, *complexEntity.Rating)
+		require.NotNil(t, complexEntity.Rating)
+		assert.Equal(t, 9.2, *complexEntity.Rating)
 		assert.Equal(t, genres, *complexEntity.Genres)
 
 		// Verify date parsing
@@ -520,7 +522,8 @@ func TestProcessorCoreLogicWithTheTVDBID(t *testing.T) {
 		assert.Equal(t, titleRomaji, *savedAnime.TitleRomaji)
 		assert.Equal(t, synopsis, *savedAnime.Synopsis)
 		assert.Equal(t, episodes, *savedAnime.Episodes)
-		assert.Equal(t, rating, *savedAnime.Rating)
+		require.NotNil(t, savedAnime.Rating)
+		assert.Equal(t, 9.2, *savedAnime.Rating)
 		assert.Equal(t, genres, *savedAnime.Genres)
 	})
 }

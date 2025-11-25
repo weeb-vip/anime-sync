@@ -5,16 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/event"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
+	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime_tag"
+	"github.com/weeb-vip/anime-sync/internal/db/repositories/tag"
 	"github.com/weeb-vip/anime-sync/internal/logger"
 	"go.uber.org/zap"
-	"strings"
-	"time"
 )
 
 type Options struct {
@@ -26,18 +29,22 @@ type AnimeProcessor interface {
 }
 
 type AnimeProcessorImpl struct {
-	Repository      anime.AnimeRepositoryImpl
-	Options         Options
-	AlgoliaProducer func(ctx context.Context, message *kafka.Message) error
-	Producer        func(ctx context.Context, message *kafka.Message) error
+	Repository         anime.AnimeRepositoryImpl
+	TagRepository      tag.TagRepositoryImpl
+	AnimeTagRepository anime_tag.AnimeTagRepositoryImpl
+	Options            Options
+	AlgoliaProducer    func(ctx context.Context, message *kafka.Message) error
+	Producer           func(ctx context.Context, message *kafka.Message) error
 }
 
 func NewAnimeProcessor(opt Options, db *db.DB, algoliaProducer func(ctx context.Context, message *kafka.Message) error, producer func(ctx context.Context, message *kafka.Message) error) AnimeProcessor {
 	return &AnimeProcessorImpl{
-		Repository:      anime.NewAnimeRepository(db),
-		Options:         opt,
-		AlgoliaProducer: algoliaProducer,
-		Producer:        producer,
+		Repository:         anime.NewAnimeRepository(db),
+		TagRepository:      tag.NewTagRepository(db),
+		AnimeTagRepository: anime_tag.NewAnimeTagRepository(db),
+		Options:            opt,
+		AlgoliaProducer:    algoliaProducer,
+		Producer:           producer,
 	}
 }
 
@@ -53,12 +60,30 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		return data, fmt.Errorf("flagsmith client not found in context")
 	}
 
-	flagsmithClient, ok := flagsmithClientInterface.(interface {
-		GetEnvironmentFlags() (flagsmith.Flags, error)
-	})
+	// Try the new interface first
+	flagsmithClient, ok := flagsmithClientInterface.(FlagSmithClient)
 	if !ok {
-		log.Error("Flagsmith client has wrong type")
-		return data, fmt.Errorf("flagsmith client has wrong type")
+		// Fall back to the raw Flagsmith client
+		rawClient, ok := flagsmithClientInterface.(interface {
+			GetEnvironmentFlags() (flagsmith.Flags, error)
+		})
+		if !ok {
+			log.Error("Flagsmith client has wrong type")
+			return data, fmt.Errorf("flagsmith client has wrong type")
+		}
+
+		log.Info("Getting environment flags from flagsmith client")
+		flags, err := rawClient.GetEnvironmentFlags()
+		if err != nil {
+			log.Error("Failed to get environment flags", zap.Error(err))
+			return data, fmt.Errorf("failed to get environment flags: %w", err)
+		}
+
+		log.Info("Checking if feature 'enable_kafka' is enabled")
+		isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
+		log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
+
+		return p.processPayload(ctx, data, payload, isEnabled, log)
 	}
 
 	log.Info("Getting environment flags from flagsmith client")
@@ -72,6 +97,11 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
 	log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
 
+	return p.processPayload(ctx, data, payload, isEnabled, log)
+}
+
+// processPayload handles the main processing logic after feature flag check
+func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Event[*kafka.Message, Payload], payload Payload, isEnabled bool, log *zap.Logger) (event.Event[*kafka.Message, Payload], error) {
 	// log the payload
 	log.Debug("Payload", zap.Any("payload", payload))
 
@@ -100,6 +130,13 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		if err != nil {
 			return data, err
 		}
+
+		// Handle tag associations
+		err = p.syncTags(ctx, newAnime.ID, payload.After.Genres)
+		if err != nil {
+			log.Warn("Failed to sync tags", zap.Error(err))
+		}
+
 		jsonAnime, err := json.Marshal(ProducerPayload{
 			Action: CreateAction,
 			Data:   payload.After,
@@ -213,6 +250,13 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		if err != nil {
 			return data, err
 		}
+
+		// Handle tag associations
+		err = p.syncTags(ctx, newAnime.ID, payload.After.Genres)
+		if err != nil {
+			log.Warn("Failed to sync tags", zap.Error(err))
+		}
+
 		// convert new anime to json
 		jsonAnime, err := json.Marshal(ProducerPayload{
 			Action: CreateAction,
@@ -352,4 +396,35 @@ func (p *AnimeProcessorImpl) ParseToEntity(ctx context.Context, data Schema) (*a
 	}
 
 	return &newAnime, nil
+}
+
+func (p *AnimeProcessorImpl) syncTags(ctx context.Context, animeID string, genres *string) error {
+	log := logger.FromCtx(ctx)
+
+	if genres == nil || *genres == "" {
+		// No genres, clear all tags
+		return p.AnimeTagRepository.SetTagsForAnime(animeID, []int64{})
+	}
+
+	// Parse genres JSON array into tag names
+	var genreList []string
+	if err := json.Unmarshal([]byte(*genres), &genreList); err != nil {
+		log.Warn("Failed to parse genres as JSON array", zap.String("genres", *genres), zap.Error(err))
+		return p.AnimeTagRepository.SetTagsForAnime(animeID, []int64{})
+	}
+
+	var tagIDs []int64
+	for _, genreName := range genreList {
+		trimmedName := strings.TrimSpace(genreName)
+		if trimmedName != "" {
+			t, err := p.TagRepository.FindOrCreate(trimmedName)
+			if err != nil {
+				log.Warn("Failed to find or create tag", zap.String("tag", trimmedName), zap.Error(err))
+				continue
+			}
+			tagIDs = append(tagIDs, t.ID)
+		}
+	}
+
+	return p.AnimeTagRepository.SetTagsForAnime(animeID, tagIDs)
 }

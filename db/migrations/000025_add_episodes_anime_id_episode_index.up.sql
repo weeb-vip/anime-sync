@@ -1,0 +1,1 @@
+CREATE INDEX idx_episodes_anime_id_episode ON episodes(anime_id, episode);
