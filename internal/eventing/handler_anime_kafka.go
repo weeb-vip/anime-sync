@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/drivers"
 	epKafka "github.com/ThatCatDev/ep/v2/drivers/kafka"
 	"github.com/ThatCatDev/ep/v2/event"
@@ -13,39 +12,17 @@ import (
 	"github.com/ThatCatDev/ep/v2/processor"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/config"
-	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/logger"
 	"github.com/weeb-vip/anime-sync/internal/services/anime_processor"
 	"go.uber.org/zap"
 )
 
-type FlagSmithClient interface {
-	GetEnvironmentFlags() (flagsmith.Flags, error)
-}
-
-type FlagSmithClientImpl struct {
-	Client *flagsmith.Client
-}
-
-func (f *FlagSmithClientImpl) GetEnvironmentFlags() (flagsmith.Flags, error) {
-	return f.Client.GetEnvironmentFlags()
-}
-
-func NewFlagSmithClient(ctx context.Context, apiKey, baseURL string) FlagSmithClient {
-	client := flagsmith.NewClient(apiKey,
-		flagsmith.WithBaseURL(baseURL),
-		flagsmith.WithContext(ctx))
-	return &FlagSmithClientImpl{Client: client}
-}
-
 func EventingAnimeKafka() error {
 	cfg := config.LoadConfigOrPanic()
 	ctx := context.Background()
 	log := logger.Get()
 	ctx = logger.WithCtx(ctx, log)
-
-	ctx = addFFToCtx(ctx, cfg)
 
 	kafkaConfig := &epKafka.KafkaConfig{
 		ConsumerGroupName:        cfg.KafkaConfig.ConsumerGroupName,
@@ -102,13 +79,6 @@ func EventingAnimeKafka() error {
 	}
 
 	return nil
-}
-
-func addFFToCtx(ctx context.Context, cfg config.Config) context.Context {
-	ffClient := NewFlagSmithClient(ctx, cfg.FFConfig.APIKey, cfg.FFConfig.BaseURL)
-
-	// create value in context to store flagsmith client
-	return context.WithValue(ctx, internal.FFClient{}, ffClient)
 }
 
 func kafkaProducer(ctx context.Context, driver drivers.Driver[*kafka.Message], topic string) func(ctx context.Context, message *kafka.Message) error {

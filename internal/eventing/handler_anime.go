@@ -23,8 +23,6 @@ func EventingAnime() error {
 	log := logger.Get()
 	ctx = logger.WithCtx(ctx, log)
 
-	ctx = addFFToCtx(ctx, cfg)
-
 	kafkaConfig := &epKafka.KafkaConfig{
 		ConsumerGroupName:        cfg.KafkaConfig.ConsumerGroupName,
 		BootstrapServers:         cfg.KafkaConfig.BootstrapServers,

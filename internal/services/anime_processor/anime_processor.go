@@ -3,15 +3,12 @@ package anime_processor
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/Flagsmith/flagsmith-go-client/v2"
 	"github.com/ThatCatDev/ep/v2/event"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime_tag"
@@ -53,55 +50,11 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 
 	payload := data.Payload
 
-	log.Info("Getting flagsmith client from context")
-	flagsmithClientInterface := ctx.Value(internal.FFClient{})
-	if flagsmithClientInterface == nil {
-		log.Error("Flagsmith client not found in context")
-		return data, fmt.Errorf("flagsmith client not found in context")
-	}
-
-	// Try the new interface first
-	flagsmithClient, ok := flagsmithClientInterface.(FlagSmithClient)
-	if !ok {
-		// Fall back to the raw Flagsmith client
-		rawClient, ok := flagsmithClientInterface.(interface {
-			GetEnvironmentFlags() (flagsmith.Flags, error)
-		})
-		if !ok {
-			log.Error("Flagsmith client has wrong type")
-			return data, fmt.Errorf("flagsmith client has wrong type")
-		}
-
-		log.Info("Getting environment flags from flagsmith client")
-		flags, err := rawClient.GetEnvironmentFlags()
-		if err != nil {
-			log.Error("Failed to get environment flags", zap.Error(err))
-			return data, fmt.Errorf("failed to get environment flags: %w", err)
-		}
-
-		log.Info("Checking if feature 'enable_kafka' is enabled")
-		isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
-		log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
-
-		return p.processPayload(ctx, data, payload, isEnabled, log)
-	}
-
-	log.Info("Getting environment flags from flagsmith client")
-	flags, err := flagsmithClient.GetEnvironmentFlags()
-	if err != nil {
-		log.Error("Failed to get environment flags", zap.Error(err))
-		return data, fmt.Errorf("failed to get environment flags: %w", err)
-	}
-
-	log.Info("Checking if feature 'enable_kafka' is enabled")
-	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
-	log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
-
-	return p.processPayload(ctx, data, payload, isEnabled, log)
+	return p.processPayload(ctx, data, payload, log)
 }
 
-// processPayload handles the main processing logic after feature flag check
-func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Event[*kafka.Message, Payload], payload Payload, isEnabled bool, log *zap.Logger) (event.Event[*kafka.Message, Payload], error) {
+// processPayload handles the main processing logic
+func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Event[*kafka.Message, Payload], payload Payload, log *zap.Logger) (event.Event[*kafka.Message, Payload], error) {
 	// log the payload
 	log.Debug("Payload", zap.Any("payload", payload))
 

@@ -308,12 +308,11 @@ func TestTheTVDBIDIntegration(t *testing.T) {
 
 // TestCompleteProcessorWorkflowWithTheTVDBID tests the full processor workflow through Process() method
 func TestCompleteProcessorWorkflowWithTheTVDBID(t *testing.T) {
-	// Commented out due to Flagsmith type casting complexity
-	// Use TestAnimeProcessorWorkflowWithTheTVDBID in processor_workflow_test.go which bypasses Flagsmith
+	// Replaced by TestAnimeProcessorWorkflowWithTheTVDBID in processor_workflow_test.go
 	t.Skip("Skipping - replaced by TestAnimeProcessorWorkflowWithTheTVDBID with working test processor")
 }
 
-// TestProcessorCoreLogicWithTheTVDBID tests processor logic without Flagsmith dependency
+// TestProcessorCoreLogicWithTheTVDBID tests processor core logic
 func TestProcessorCoreLogicWithTheTVDBID(t *testing.T) {
 	// Skip if not running integration tests
 	if testing.Short() {
