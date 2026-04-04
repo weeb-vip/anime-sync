@@ -5,7 +5,6 @@ go 1.23
 toolchain go1.23.11
 
 require (
-	github.com/Flagsmith/flagsmith-go-client/v2 v2.3.1
 	github.com/ThatCatDev/ep/v2 v2.2.5
 	github.com/apache/pulsar-client-go v0.14.0
 	github.com/cenkalti/backoff/v4 v4.3.0
@@ -16,7 +15,6 @@ require (
 	github.com/jinzhu/configor v1.2.1
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.11.1
-	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/mysql v1.5.0
 	gorm.io/gorm v1.25.0
@@ -31,13 +29,11 @@ require (
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.4.0 // indirect
-	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -72,7 +68,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/mod v0.19.0 // indirect
-	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect

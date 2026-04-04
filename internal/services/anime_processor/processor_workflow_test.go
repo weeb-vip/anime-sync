@@ -10,16 +10,13 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
 	"github.com/weeb-vip/anime-sync/config"
-	"github.com/weeb-vip/anime-sync/internal"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/logger"
 	"github.com/weeb-vip/anime-sync/internal/services/anime_processor"
-	"github.com/weeb-vip/anime-sync/internal/services/anime_processor/mocks"
 )
 
 // TestRealProcessorWorkflowWithMocks tests the actual processor with proper mocks
@@ -73,22 +70,9 @@ func TestRealProcessorWorkflowWithMocks(t *testing.T) {
 	options := anime_processor.Options{NoErrorOnDelete: false}
 	processor := anime_processor.NewAnimeProcessor(options, database, algoliaProducer, kafkaProducer)
 
-	// Setup context with logger and mock flagsmith client
+	// Setup context with logger
 	log := zap.NewNop()
 	ctx := logger.WithCtx(context.Background(), log)
-
-	// Create mock Flagsmith client
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockFlagsmith := mocks.NewMockFlagSmithClient(ctrl)
-	mockFlags := mocks.NewMockFlags(ctrl)
-
-	// Setup expectations - allow any number of calls
-	mockFlagsmith.EXPECT().GetEnvironmentFlags().Return(mockFlags, nil).AnyTimes()
-	mockFlags.EXPECT().IsFeatureEnabled("enable_kafka").Return(true, nil).AnyTimes()
-
-	ctx = context.WithValue(ctx, internal.FFClient{}, mockFlagsmith)
 
 	t.Run("TestRealProcessorCreateWithTheTVDBID", func(t *testing.T) {
 		// Reset message collectors
@@ -395,22 +379,9 @@ func TestSyncTagsWithJSONGenres(t *testing.T) {
 	options := anime_processor.Options{NoErrorOnDelete: false}
 	processor := anime_processor.NewAnimeProcessor(options, database, algoliaProducer, kafkaProducer)
 
-	// Setup context with mock flagsmith client
+	// Setup context with logger
 	log := zap.NewNop()
 	ctx := logger.WithCtx(context.Background(), log)
-
-	// Create mock Flagsmith client
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockFlagsmith := mocks.NewMockFlagSmithClient(ctrl)
-	mockFlags := mocks.NewMockFlags(ctrl)
-
-	// Setup expectations - allow any number of calls
-	mockFlagsmith.EXPECT().GetEnvironmentFlags().Return(mockFlags, nil).AnyTimes()
-	mockFlags.EXPECT().IsFeatureEnabled("enable_kafka").Return(true, nil).AnyTimes()
-
-	ctx = context.WithValue(ctx, internal.FFClient{}, mockFlagsmith)
 
 	t.Run("CreateAnimeWithJSONGenres", func(t *testing.T) {
 		titleEn := "Sync Tags Test Anime"

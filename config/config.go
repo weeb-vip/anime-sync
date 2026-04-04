@@ -9,7 +9,6 @@ type Config struct {
 	DBConfig     DBConfig
 	PulsarConfig PulsarConfig
 	KafkaConfig  KafkaConfig
-	FFConfig     FFConfig
 }
 
 type AppConfig struct {
@@ -42,11 +41,6 @@ type KafkaConfig struct {
 	Topic             string `default:"anime-db.public.anime" env:"KAFKA_TOPIC"`
 	ProducerTopic     string `default:"image-sync" env:"KAFKA_PRODUCER_TOPIC"`
 	AlgoliaTopic      string `default:"algolia-sync" env:"KAFKA_ALGOLIA_TOPIC"`
-}
-
-type FFConfig struct {
-	APIKey  string `default:"" env:"FF_API_KEY"`
-	BaseURL string `default:"http://flagsmith-api.weeb.svc.cluster.local" env:"FF_BASE_URL"`
 }
 
 func LoadConfigOrPanic() Config {
