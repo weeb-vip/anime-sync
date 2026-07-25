@@ -7,6 +7,7 @@ import (
 type Anime struct {
 	ID            string       `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	AnidbID       *string      `gorm:"column:anidbid;null" json:"anidbid"`
+	MalID         *int         `gorm:"column:mal_id;null" json:"mal_id"`
 	TheTVDBID     *string      `gorm:"column:thetvdbid;null" json:"thetvdbid"`
 	Type          *RECORD_TYPE `gorm:"column:type;type:text;default:Anime" json:"type"`
 	TitleEn       *string      `gorm:"column:title_en;null" json:"title_en"`
