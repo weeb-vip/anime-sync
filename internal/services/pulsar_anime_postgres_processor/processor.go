@@ -77,6 +77,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		}
 		payload := &ImagePayload{
 			Data: ImageSchema{
+				ID:   data.After.ID,
 				Name: title,
 				URL:  imageURL,
 				Type: DataTypeAnime,
@@ -168,6 +169,7 @@ func (p *PulsarAnimePostgresProcessor) Process(ctx context.Context, data Payload
 		}
 		payload := &ImagePayload{
 			Data: ImageSchema{
+				ID:   data.After.ID,
 				Name: title,
 				URL:  imageURL,
 				Type: DataTypeAnime,
