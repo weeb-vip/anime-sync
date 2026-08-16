@@ -114,6 +114,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 		}
 		imagePayload := &ImagePayload{
 			Data: ImageSchema{
+				ID:   payload.After.ID,
 				Name: title,
 				URL:  imageURL,
 				Type: DataTypeAnime,
@@ -234,6 +235,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 		}
 		imagePayload := &ImagePayload{
 			Data: ImageSchema{
+				ID:   payload.After.ID,
 				Name: title,
 				URL:  imageURL,
 				Type: DataTypeAnime,
