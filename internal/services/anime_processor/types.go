@@ -18,10 +18,13 @@ const (
 )
 
 type Schema struct {
-	ID            string  `json:"id"`
-	AnidbID       *string `json:"anidbid"`
-	MalID         *int    `json:"mal_id"`
-	TheTVDBID     *string `json:"thetvdbid"`
+	ID        string  `json:"id"`
+	AnidbID   *string `json:"anidbid"`
+	MalID     *int    `json:"mal_id"`
+	TheTVDBID *string `json:"thetvdbid"`
+	// UrlSlug is the anime's public URL segment, generated in postgres.
+	// Absent from events emitted before that column existed, hence the pointer.
+	UrlSlug       *string `json:"url_slug"`
 	TitleEn       *string `json:"title_en"`
 	TitleJp       *string `json:"title_jp"`
 	TitleRomaji   *string `json:"title_romaji"`
