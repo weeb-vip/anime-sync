@@ -168,6 +168,27 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 				return data, err
 			}
 		}
+
+		// Tell the search index too. Removing the row from MySQL and returning
+		// left the anime searchable forever: the search index is fed by these
+		// events, and there is no later event for a row that no longer exists,
+		// so nothing would ever revisit it. That is how ~2,860 anime merged
+		// away as duplicates stayed in Algolia, each one a result leading to a
+		// 404.
+		jsonDelete, err := json.Marshal(ProducerPayload{
+			Action: DeleteAction,
+			Data:   payload.Before,
+		})
+		if err != nil {
+			log.Error("Error marshalling delete payload", zap.Error(err))
+			return data, err
+		}
+		if err := p.AlgoliaProducer(ctx, &kafka.Message{Value: jsonDelete}); err != nil {
+			log.Error("Error sending delete to algolia producer", zap.Error(err))
+			return data, err
+		}
+		log.Info("Published delete to algolia", zap.String("id", payload.Before.ID))
+
 		return data, nil
 
 	}
