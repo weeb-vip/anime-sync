@@ -1,1 +1,0 @@
-ALTER TABLE anime DROP COLUMN thetvdbid;

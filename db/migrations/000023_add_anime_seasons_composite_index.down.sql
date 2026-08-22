@@ -1,1 +1,0 @@
-DROP INDEX idx_anime_seasons_season_anime_id ON anime_seasons;
