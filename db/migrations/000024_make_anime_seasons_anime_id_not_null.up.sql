@@ -1,1 +1,0 @@
-ALTER TABLE anime_seasons MODIFY COLUMN anime_id VARCHAR(36) NOT NULL;
