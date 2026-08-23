@@ -2,7 +2,6 @@ module github.com/weeb-vip/anime-sync
 
 go 1.24.0
 
-toolchain go1.24.13
 
 require (
 	github.com/ThatCatDev/ep/v2 v2.3.0
