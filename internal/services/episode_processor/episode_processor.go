@@ -3,7 +3,6 @@ package episode_processor
 import (
 	"context"
 	"github.com/ThatCatDev/ep/v2/event"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	anime_episode "github.com/weeb-vip/anime-sync/internal/db/repositories/anime_episode"
 	"github.com/weeb-vip/anime-sync/internal/logger"
@@ -15,23 +14,32 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type EpisodeProcessor interface {
-	Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error)
+// The driver message type is a parameter because the processor never looks at
+// it. Nothing here reads DriverMessage, RawData or Headers -- only Payload,
+// which the transform middleware has already filled in. Hard-coding
+// *kafka.Message meant this could not be reused over NATS despite none of the
+// logic being Kafka-specific.
+//
+// Producers take the encoded value rather than a driver message for the same
+// reason: every call site only ever set Value, so building the transport's
+// message belongs in the handler that knows which transport it is.
+type EpisodeProcessor[DM any] interface {
+	Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error)
 }
 
-type EpisodeProcessorImpl struct {
+type EpisodeProcessorImpl[DM any] struct {
 	Repository anime_episode.AnimeEpisodeRepositoryImpl
 	Options    Options
 }
 
-func NewAnimeProcessor(opt Options, db *db.DB) EpisodeProcessor {
-	return &EpisodeProcessorImpl{
+func NewAnimeProcessor[DM any](opt Options, db *db.DB) EpisodeProcessor[DM] {
+	return &EpisodeProcessorImpl[DM]{
 		Repository: anime_episode.NewAnimeRepository(db),
 		Options:    opt,
 	}
 }
 
-func (p *EpisodeProcessorImpl) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
+func (p *EpisodeProcessorImpl[DM]) Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error) {
 	log := logger.FromCtx(ctx)
 
 	payload := data.Payload
@@ -100,7 +108,7 @@ func (p *EpisodeProcessorImpl) Process(ctx context.Context, data event.Event[*ka
 
 }
 
-func (p *EpisodeProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime_episode.AnimeEpisode, error) {
+func (p *EpisodeProcessorImpl[DM]) parseToEntity(ctx context.Context, data Schema) (*anime_episode.AnimeEpisode, error) {
 	var newEpisode anime_episode.AnimeEpisode
 
 	newEpisode.ID = data.Id

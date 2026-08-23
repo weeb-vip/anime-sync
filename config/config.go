@@ -5,10 +5,10 @@ import (
 )
 
 type Config struct {
-	AppConfig    AppConfig
-	DBConfig     DBConfig
-	PulsarConfig PulsarConfig
-	KafkaConfig  KafkaConfig
+	AppConfig   AppConfig
+	DBConfig    DBConfig
+	KafkaConfig KafkaConfig
+	NatsConfig  NatsConfig
 }
 
 type AppConfig struct {
@@ -26,14 +26,6 @@ type DBConfig struct {
 	SSLMode  string `default:"require" env:"DBSSL"`
 }
 
-type PulsarConfig struct {
-	URL                  string `default:"pulsar://localhost:6650" env:"PULSARURL"`
-	Topic                string `default:"public/default/myanimelist.public.anime" env:"PULSARTOPIC"`
-	SubscribtionName     string `default:"my-sub" env:"PULSARSUBSCRIPTIONNAME"`
-	ProducerAlgoliaTopic string `default:"public/default/myanimelist.public.anime-algolia" env:"PULSARALGOLIATOPIC"`
-	ProducerImageTopic   string `default:"public/default/myanimelist.public.anime-image" env:"PULSARIMAGETOPIC"`
-}
-
 type KafkaConfig struct {
 	ConsumerGroupName string `default:"image-sync-group" env:"KAFKA_CONSUMER_GROUP_NAME"`
 	BootstrapServers  string `default:"localhost:9092" env:"KAFKA_BOOTSTRAP_SERVERS"`
@@ -41,6 +33,40 @@ type KafkaConfig struct {
 	Topic             string `default:"anime-db.public.anime" env:"KAFKA_TOPIC"`
 	ProducerTopic     string `default:"image-sync" env:"KAFKA_PRODUCER_TOPIC"`
 	AlgoliaTopic      string `default:"algolia-sync" env:"KAFKA_ALGOLIA_TOPIC"`
+}
+
+// NatsConfig mirrors KafkaConfig field for field, so a service moving between
+// the two has one obvious substitution per setting rather than a translation.
+//
+// The names differ where the systems genuinely differ. A NATS "subject" is what
+// Kafka calls a topic, and Debezium publishes to subjects named exactly like the
+// topics it used to write, so the values carry over unchanged --
+// anime-db-staging.public.anime is both.
+type NatsConfig struct {
+	URL string `default:"nats://localhost:4222" env:"NATSURL"`
+
+	// The durable consumer name. Like a Kafka consumer group, every instance
+	// sharing it shares one subscription's workload and ack state; unlike one,
+	// leaving it empty makes the consumer ephemeral and its position is lost on
+	// restart.
+	ConsumerGroupName string `default:"anime-sync-nats" env:"NATSCONSUMERGROUPNAME"`
+
+	// The stream to bind to, rather than one derived from the subject.
+	//
+	// Debezium owns the CDC stream and declares it over anime-db-staging.>.
+	// JetStream refuses two streams whose subjects overlap, so a consumer that
+	// created its own per-subject stream would fail against it. Naming the
+	// stream makes the driver bind to the existing one instead.
+	StreamName string `default:"ANIMEDBSTAGING" env:"NATSSTREAMNAME"`
+
+	Offset string `default:"earliest" env:"NATSOFFSET"`
+
+	Subject string `default:"anime-db-staging.public.anime" env:"NATSSUBJECT"`
+
+	// Outbound subjects. These are not CDC, so nothing else declares a stream
+	// over them and the driver creates one per subject as needed.
+	ProducerSubject string `default:"image-sync" env:"NATSPRODUCERSUBJECT"`
+	AlgoliaSubject  string `default:"algolia-sync" env:"NATSALGOLIASUBJECT"`
 }
 
 func LoadConfigOrPanic() Config {

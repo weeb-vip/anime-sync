@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/ThatCatDev/ep/v2/event"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime_season"
 	"github.com/weeb-vip/anime-sync/internal/logger"
@@ -16,25 +15,34 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type AnimeSeasonProcessor interface {
-	Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error)
+// The driver message type is a parameter because the processor never looks at
+// it. Nothing here reads DriverMessage, RawData or Headers -- only Payload,
+// which the transform middleware has already filled in. Hard-coding
+// *kafka.Message meant this could not be reused over NATS despite none of the
+// logic being Kafka-specific.
+//
+// Producers take the encoded value rather than a driver message for the same
+// reason: every call site only ever set Value, so building the transport's
+// message belongs in the handler that knows which transport it is.
+type AnimeSeasonProcessor[DM any] interface {
+	Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error)
 }
 
-type AnimeSeasonProcessorImpl struct {
+type AnimeSeasonProcessorImpl[DM any] struct {
 	Repository      anime_season.AnimeSeasonRepositoryImpl
 	Options         Options
-	AlgoliaProducer func(ctx context.Context, message *kafka.Message) error
+	AlgoliaProducer func(ctx context.Context, value []byte) error
 }
 
-func NewAnimeSeasonProcessor(opt Options, db *db.DB, algoliaProducer func(ctx context.Context, message *kafka.Message) error) AnimeSeasonProcessor {
-	return &AnimeSeasonProcessorImpl{
+func NewAnimeSeasonProcessor[DM any](opt Options, db *db.DB, algoliaProducer func(ctx context.Context, value []byte) error) AnimeSeasonProcessor[DM] {
+	return &AnimeSeasonProcessorImpl[DM]{
 		Repository:      anime_season.NewAnimeSeasonRepository(db),
 		Options:         opt,
 		AlgoliaProducer: algoliaProducer,
 	}
 }
 
-func (p *AnimeSeasonProcessorImpl) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
+func (p *AnimeSeasonProcessorImpl[DM]) Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error) {
 	log := logger.FromCtx(ctx)
 
 	payload := data.Payload
@@ -61,9 +69,7 @@ func (p *AnimeSeasonProcessorImpl) Process(ctx context.Context, data event.Event
 			return data, err
 		}
 
-		err = p.AlgoliaProducer(ctx, &kafka.Message{
-			Value: jsonAnimeSeason,
-		})
+		err = p.AlgoliaProducer(ctx, jsonAnimeSeason)
 		if err != nil {
 			log.Error("Error sending message to algolia producer", zap.Error(err))
 			return data, err
@@ -109,9 +115,7 @@ func (p *AnimeSeasonProcessorImpl) Process(ctx context.Context, data event.Event
 			return data, err
 		}
 
-		err = p.AlgoliaProducer(ctx, &kafka.Message{
-			Value: jsonAnimeSeason,
-		})
+		err = p.AlgoliaProducer(ctx, jsonAnimeSeason)
 		if err != nil {
 			return data, err
 		}
@@ -124,7 +128,7 @@ func (p *AnimeSeasonProcessorImpl) Process(ctx context.Context, data event.Event
 	return data, nil
 }
 
-func (p *AnimeSeasonProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime_season.AnimeSeason, error) {
+func (p *AnimeSeasonProcessorImpl[DM]) parseToEntity(ctx context.Context, data Schema) (*anime_season.AnimeSeason, error) {
 	var newAnimeSeason anime_season.AnimeSeason
 
 	newAnimeSeason.ID = data.ID

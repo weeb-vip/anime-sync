@@ -49,7 +49,7 @@ func EventingAnimeEpisodeKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	episodeProcessorInstance := episode_processor.NewAnimeProcessor(processorOptions, database)
+	episodeProcessorInstance := episode_processor.NewAnimeProcessor[*kafka.Message](processorOptions, database)
 
 	processorInstance := processor.NewProcessor[*kafka.Message, episode_processor.Payload](driver, cfg.KafkaConfig.Topic, episodeProcessorInstance.Process)
 

@@ -53,22 +53,22 @@ func TestRealProcessorWorkflowWithMocks(t *testing.T) {
 	defer cleanup()
 
 	// Setup mock producers to capture calls
-	var algoliaMessages []*kafka.Message
-	var kafkaMessages []*kafka.Message
+	var algoliaMessages [][]byte
+	var kafkaMessages [][]byte
 
-	algoliaProducer := func(ctx context.Context, message *kafka.Message) error {
-		algoliaMessages = append(algoliaMessages, message)
+	algoliaProducer := func(ctx context.Context, value []byte) error {
+		algoliaMessages = append(algoliaMessages, value)
 		return nil
 	}
 
-	kafkaProducer := func(ctx context.Context, message *kafka.Message) error {
-		kafkaMessages = append(kafkaMessages, message)
+	kafkaProducer := func(ctx context.Context, value []byte) error {
+		kafkaMessages = append(kafkaMessages, value)
 		return nil
 	}
 
 	// Create real processor
 	options := anime_processor.Options{NoErrorOnDelete: false}
-	processor := anime_processor.NewAnimeProcessor(options, database, algoliaProducer, kafkaProducer)
+	processor := anime_processor.NewAnimeProcessor[*kafka.Message](options, database, algoliaProducer, kafkaProducer)
 
 	// Setup context with logger
 	log := zap.NewNop()
@@ -127,7 +127,7 @@ func TestRealProcessorWorkflowWithMocks(t *testing.T) {
 
 		// Verify producer message content
 		var producerPayload anime_processor.ProducerPayload
-		err = json.Unmarshal(algoliaMessages[0].Value, &producerPayload)
+		err = json.Unmarshal(algoliaMessages[0], &producerPayload)
 		require.NoError(t, err)
 		assert.Equal(t, anime_processor.CreateAction, producerPayload.Action)
 		require.NotNil(t, producerPayload.Data.TheTVDBID)
@@ -327,7 +327,7 @@ func TestRealProcessorWorkflowWithMocks(t *testing.T) {
 
 		// Verify producer message content - TheTVDBID should be nil in payload
 		var producerPayload anime_processor.ProducerPayload
-		err = json.Unmarshal(algoliaMessages[0].Value, &producerPayload)
+		err = json.Unmarshal(algoliaMessages[0], &producerPayload)
 		require.NoError(t, err)
 		assert.Equal(t, anime_processor.CreateAction, producerPayload.Action)
 		assert.Nil(t, producerPayload.Data.TheTVDBID, "TheTVDBID should be nil in producer payload")
@@ -368,16 +368,16 @@ func TestSyncTagsWithJSONGenres(t *testing.T) {
 	defer cleanup()
 
 	// Setup mock producers
-	algoliaProducer := func(ctx context.Context, message *kafka.Message) error {
+	algoliaProducer := func(ctx context.Context, value []byte) error {
 		return nil
 	}
-	kafkaProducer := func(ctx context.Context, message *kafka.Message) error {
+	kafkaProducer := func(ctx context.Context, value []byte) error {
 		return nil
 	}
 
 	// Create processor
 	options := anime_processor.Options{NoErrorOnDelete: false}
-	processor := anime_processor.NewAnimeProcessor(options, database, algoliaProducer, kafkaProducer)
+	processor := anime_processor.NewAnimeProcessor[*kafka.Message](options, database, algoliaProducer, kafkaProducer)
 
 	// Setup context with logger
 	log := zap.NewNop()
@@ -571,4 +571,3 @@ func TestSyncTagsWithJSONGenres(t *testing.T) {
 		assert.Contains(t, tagNames, "Drama")
 	})
 }
-
