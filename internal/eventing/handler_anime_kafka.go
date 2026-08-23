@@ -53,7 +53,7 @@ func EventingAnimeKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	postgresProcessor := anime_processor.NewAnimeProcessor(posgresProcessorOptions, database, kafkaProducer(ctx, driver, cfg.KafkaConfig.AlgoliaTopic), kafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
+	postgresProcessor := anime_processor.NewAnimeProcessor[*kafka.Message](posgresProcessorOptions, database, kafkaProducer(ctx, driver, cfg.KafkaConfig.AlgoliaTopic), kafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
 
 	processorInstance := processor.NewProcessor[*kafka.Message, anime_processor.Payload](driver, cfg.KafkaConfig.Topic, postgresProcessor.Process)
 
@@ -81,11 +81,14 @@ func EventingAnimeKafka() error {
 	return nil
 }
 
-func kafkaProducer(ctx context.Context, driver drivers.Driver[*kafka.Message], topic string) func(ctx context.Context, message *kafka.Message) error {
-	return func(ctx context.Context, message *kafka.Message) error {
+// kafkaProducer takes the encoded value rather than a *kafka.Message: the
+// processors are generic over the driver message now, so building the
+// transport's message is this function's job.
+func kafkaProducer(ctx context.Context, driver drivers.Driver[*kafka.Message], topic string) func(ctx context.Context, value []byte) error {
+	return func(ctx context.Context, value []byte) error {
 		log := logger.FromCtx(ctx)
-		log.Info("Producing message to Kafka", zap.String("topic", topic), zap.String("key", string(message.Key)), zap.String("value", string(message.Value)))
-		if err := driver.Produce(ctx, topic, message); err != nil {
+		log.Info("Producing message to Kafka", zap.String("topic", topic), zap.String("value", string(value)))
+		if err := driver.Produce(ctx, topic, &kafka.Message{Value: value}); err != nil {
 			log.Error("Failed to produce message", zap.String("topic", topic), zap.Error(err))
 			return err
 		}

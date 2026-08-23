@@ -2,6 +2,8 @@ package anime_processor
 
 import (
 	"context"
+
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/weeb-vip/anime-sync/config"
@@ -53,7 +55,7 @@ func TestTheTVDBIDIntegration(t *testing.T) {
 
 	// Create anime processor components
 	repository := anime.NewAnimeRepository(database)
-	processor := &AnimeProcessorImpl{Repository: repository}
+	processor := &AnimeProcessorImpl[*kafka.Message]{Repository: repository}
 
 	t.Run("TestParseToEntityWithTheTVDBID", func(t *testing.T) {
 		thetvdbid := "987654"
@@ -345,7 +347,7 @@ func TestProcessorCoreLogicWithTheTVDBID(t *testing.T) {
 
 	// Create processor implementation directly
 	repository := anime.NewAnimeRepository(database)
-	processor := &AnimeProcessorImpl{
+	processor := &AnimeProcessorImpl[*kafka.Message]{
 		Repository: repository,
 		Options:    Options{NoErrorOnDelete: false},
 	}

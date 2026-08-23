@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ThatCatDev/ep/v2/event"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/anime-sync/internal/db"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime"
 	"github.com/weeb-vip/anime-sync/internal/db/repositories/anime_tag"
@@ -21,21 +20,30 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type AnimeProcessor interface {
-	Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error)
+// The driver message type is a parameter because the processor never looks at
+// it. Nothing here reads DriverMessage, RawData or Headers -- only Payload,
+// which the transform middleware has already filled in. Hard-coding
+// *kafka.Message meant this could not be reused over NATS despite none of the
+// logic being Kafka-specific.
+//
+// Producers take the encoded value rather than a driver message for the same
+// reason: every call site only ever set Value, so building the transport's
+// message belongs in the handler that knows which transport it is.
+type AnimeProcessor[DM any] interface {
+	Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error)
 }
 
-type AnimeProcessorImpl struct {
+type AnimeProcessorImpl[DM any] struct {
 	Repository         anime.AnimeRepositoryImpl
 	TagRepository      tag.TagRepositoryImpl
 	AnimeTagRepository anime_tag.AnimeTagRepositoryImpl
 	Options            Options
-	AlgoliaProducer    func(ctx context.Context, message *kafka.Message) error
-	Producer           func(ctx context.Context, message *kafka.Message) error
+	AlgoliaProducer    func(ctx context.Context, value []byte) error
+	Producer           func(ctx context.Context, value []byte) error
 }
 
-func NewAnimeProcessor(opt Options, db *db.DB, algoliaProducer func(ctx context.Context, message *kafka.Message) error, producer func(ctx context.Context, message *kafka.Message) error) AnimeProcessor {
-	return &AnimeProcessorImpl{
+func NewAnimeProcessor[DM any](opt Options, db *db.DB, algoliaProducer func(ctx context.Context, value []byte) error, producer func(ctx context.Context, value []byte) error) AnimeProcessor[DM] {
+	return &AnimeProcessorImpl[DM]{
 		Repository:         anime.NewAnimeRepository(db),
 		TagRepository:      tag.NewTagRepository(db),
 		AnimeTagRepository: anime_tag.NewAnimeTagRepository(db),
@@ -45,7 +53,7 @@ func NewAnimeProcessor(opt Options, db *db.DB, algoliaProducer func(ctx context.
 	}
 }
 
-func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
+func (p *AnimeProcessorImpl[DM]) Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error) {
 	log := logger.FromCtx(ctx)
 
 	payload := data.Payload
@@ -54,7 +62,7 @@ func (p *AnimeProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 }
 
 // processPayload handles the main processing logic
-func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Event[*kafka.Message, Payload], payload Payload, log *zap.Logger) (event.Event[*kafka.Message, Payload], error) {
+func (p *AnimeProcessorImpl[DM]) processPayload(ctx context.Context, data event.Event[DM, Payload], payload Payload, log *zap.Logger) (event.Event[DM, Payload], error) {
 	// log the payload
 	log.Debug("Payload", zap.Any("payload", payload))
 
@@ -127,9 +135,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 			return data, err
 		}
 
-		err = p.AlgoliaProducer(ctx, &kafka.Message{
-			Value: jsonAnime,
-		})
+		err = p.AlgoliaProducer(ctx, jsonAnime)
 		if err != nil {
 			log.Error("Error sending message to algolia producer", zap.Error(err))
 			return data, err
@@ -138,9 +144,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 		if payload.After.ImageUrl != nil {
 			log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 			log.Info("Sending image to Kafka", zap.String("imageURL", *payload.After.ImageUrl))
-			err = p.Producer(ctx, &kafka.Message{
-				Value: jsonImage,
-			})
+			err = p.Producer(ctx, jsonImage)
 
 			if err != nil {
 				log.Error("Error sending message to Kafka producer", zap.Error(err))
@@ -183,7 +187,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 			log.Error("Error marshalling delete payload", zap.Error(err))
 			return data, err
 		}
-		if err := p.AlgoliaProducer(ctx, &kafka.Message{Value: jsonDelete}); err != nil {
+		if err := p.AlgoliaProducer(ctx, jsonDelete); err != nil {
 			log.Error("Error sending delete to algolia producer", zap.Error(err))
 			return data, err
 		}
@@ -267,9 +271,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 		if err != nil {
 			return data, err
 		}
-		err = p.AlgoliaProducer(ctx, &kafka.Message{
-			Value: jsonAnime,
-		})
+		err = p.AlgoliaProducer(ctx, jsonAnime)
 		if err != nil {
 			return data, err
 		}
@@ -277,9 +279,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 			log.Info("Sending update to producer", zap.String("title", title), zap.String("imageURL", imageURL))
 
 			log.Info("Sending image to Kafka producer", zap.String("title", title), zap.String("imageURL", imageURL))
-			err = p.Producer(ctx, &kafka.Message{
-				Value: jsonImage,
-			})
+			err = p.Producer(ctx, jsonImage)
 
 			if err != nil {
 				return data, err
@@ -296,7 +296,7 @@ func (p *AnimeProcessorImpl) processPayload(ctx context.Context, data event.Even
 	return data, nil
 }
 
-func (p *AnimeProcessorImpl) ParseToEntity(ctx context.Context, data Schema) (*anime.Anime, error) {
+func (p *AnimeProcessorImpl[DM]) ParseToEntity(ctx context.Context, data Schema) (*anime.Anime, error) {
 	log := logger.FromCtx(ctx)
 	var newAnime anime.Anime
 
@@ -376,7 +376,7 @@ func (p *AnimeProcessorImpl) ParseToEntity(ctx context.Context, data Schema) (*a
 	return &newAnime, nil
 }
 
-func (p *AnimeProcessorImpl) syncTags(ctx context.Context, animeID string, genres *string) error {
+func (p *AnimeProcessorImpl[DM]) syncTags(ctx context.Context, animeID string, genres *string) error {
 	log := logger.FromCtx(ctx)
 
 	if genres == nil || *genres == "" {

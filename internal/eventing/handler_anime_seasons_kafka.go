@@ -49,7 +49,7 @@ func EventingAnimeSeasonKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	postgresProcessor := anime_season_processor.NewAnimeSeasonProcessor(postgresProcessorOptions, database, kafkaProducer(ctx, driver, cfg.KafkaConfig.AlgoliaTopic))
+	postgresProcessor := anime_season_processor.NewAnimeSeasonProcessor[*kafka.Message](postgresProcessorOptions, database, kafkaProducer(ctx, driver, cfg.KafkaConfig.AlgoliaTopic))
 
 	processorInstance := processor.NewProcessor[*kafka.Message, anime_season_processor.Payload](driver, cfg.KafkaConfig.Topic, postgresProcessor.Process)
 
