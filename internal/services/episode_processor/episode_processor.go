@@ -44,6 +44,18 @@ func (p *EpisodeProcessorImpl) Process(ctx context.Context, data event.Event[*ka
 		}
 		err = p.Repository.Upsert(newAnime)
 		if err != nil {
+			// An episode whose anime has not arrived yet. Debezium gives no
+			// ordering guarantee across tables, so this is expected occasionally
+			// rather than exceptional. Retrying cannot fix it -- the anime arrives
+			// on its own topic, not by re-attempting the episode -- so the event is
+			// dropped and the consumer moves on. The row returns with the next
+			// update to it, or with the next snapshot.
+			if db.IsForeignKeyViolation(err) {
+				log.Warn("skipping episode whose anime is not present",
+					zap.Stringp("anime_id", newAnime.AnimeID),
+					zap.String("episode_id", newAnime.ID))
+				return data, nil
+			}
 			return data, err
 		}
 	}
