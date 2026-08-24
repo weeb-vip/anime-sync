@@ -46,13 +46,23 @@ func EventingAnimeSeasonNats() error {
 		}
 	}(driver)
 
+	// Publishing goes through its own driver so that these subjects get their
+	// own streams instead of being forced into Debezium's. See
+	// newNatsProducerDriver.
+	producerDriver := newNatsProducerDriver(cfg)
+	defer func(d drivers.Driver[*epNats.Message]) {
+		if err := d.Close(); err != nil {
+			log.Error("Error closing NATS producer driver", zap.String("error", err.Error()))
+		}
+	}(producerDriver)
+
 	database := db.NewDB(cfg.DBConfig)
 
 	processorOptions := anime_season_processor.Options{
 		NoErrorOnDelete: true,
 	}
 
-	postgresProcessor := anime_season_processor.NewAnimeSeasonProcessor[*epNats.Message](processorOptions, database, natsProducer(ctx, driver, cfg.NatsConfig.AlgoliaSubject))
+	postgresProcessor := anime_season_processor.NewAnimeSeasonProcessor[*epNats.Message](processorOptions, database, natsProducer(ctx, producerDriver, cfg.NatsConfig.AlgoliaSubject))
 
 	processorInstance := processor.NewProcessor[*epNats.Message, anime_season_processor.Payload](driver, cfg.NatsConfig.Subject, postgresProcessor.Process)
 
