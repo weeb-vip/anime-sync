@@ -137,17 +137,26 @@ const (
 
 // newNatsRetryDriver builds the driver for the retry and dead-letter subjects.
 //
-// StreamName is empty for the same reason as newNatsProducerDriver: these
-// subjects belong in their own streams, not inside Debezium's. It carries its
-// own durable name because ep takes that from driver-level config rather than
-// per-subject, so reusing the CDC driver's name would have the retry consumer
-// reconfigure the main consumer out from under it.
+// It names the CDC stream, unlike the producer driver, which leaves it empty.
+//
+// The retry and dead-letter subjects are derived from the CDC subject, so they
+// sit under the same wildcard: anime-db.public.anime-retry still matches
+// anime-db.>. JetStream refuses two streams whose subjects overlap, so leaving
+// StreamName empty made the driver try to create its own and fail outright --
+// "subjects overlap with an existing stream" -- taking every CDC consumer down
+// with it. These subjects have to live in Debezium's stream because they are
+// already inside its namespace.
+//
+// It still carries its own durable name: ep takes that from driver-level config
+// rather than per-subject, so reusing the CDC driver's name would have the
+// retry consumer reconfigure the main consumer out from under it.
 func newNatsRetryDriver(cfg config.Config) drivers.Driver[*epNats.Message] {
 	offset := cfg.NatsConfig.Offset
 
 	return epNats.NewNatsDriver(&epNats.Config{
 		URL:                     cfg.NatsConfig.URL,
 		ConsumerGroupName:       cfg.NatsConfig.ConsumerGroupName + "-retry",
+		StreamName:              cfg.NatsConfig.StreamName,
 		ConsumerAutoOffsetReset: &offset,
 	})
 }
