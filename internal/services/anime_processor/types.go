@@ -22,6 +22,11 @@ type Schema struct {
 	AnidbID   *string `json:"anidbid"`
 	MalID     *int    `json:"mal_id"`
 	TheTVDBID *string `json:"thetvdbid"`
+
+	// The work this anime adapts. Debezium emits it because the scraper's anime
+	// table has the column; without it here the field is dropped on unmarshal
+	// and the read store never learns which manga an anime came from.
+	SourceWorkID *string `json:"source_work_id"`
 	// UrlSlug is the anime's public URL segment, generated in postgres.
 	// Absent from events emitted before that column existed, hence the pointer.
 	UrlSlug       *string `json:"url_slug"`

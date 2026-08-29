@@ -9,6 +9,7 @@ type Anime struct {
 	AnidbID       *string      `gorm:"column:anidbid;null" json:"anidbid"`
 	MalID         *int         `gorm:"column:mal_id;null" json:"mal_id"`
 	TheTVDBID     *string      `gorm:"column:thetvdbid;null" json:"thetvdbid"`
+	SourceWorkID  *string      `gorm:"column:source_work_id;null" json:"source_work_id"`
 	UrlSlug       *string      `gorm:"column:url_slug;null" json:"url_slug"`
 	Type          *RECORD_TYPE `gorm:"column:type;type:text;default:Anime" json:"type"`
 	TitleEn       *string      `gorm:"column:title_en;null" json:"title_en"`
