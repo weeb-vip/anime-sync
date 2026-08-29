@@ -130,6 +130,28 @@ func newNatsProducerDriver(cfg config.Config) drivers.Driver[*epNats.Message] {
 	})
 }
 
+const (
+	maxRetries     = 3
+	retryHeaderKey = "retry"
+)
+
+// newNatsRetryDriver builds the driver for the retry and dead-letter subjects.
+//
+// StreamName is empty for the same reason as newNatsProducerDriver: these
+// subjects belong in their own streams, not inside Debezium's. It carries its
+// own durable name because ep takes that from driver-level config rather than
+// per-subject, so reusing the CDC driver's name would have the retry consumer
+// reconfigure the main consumer out from under it.
+func newNatsRetryDriver(cfg config.Config) drivers.Driver[*epNats.Message] {
+	offset := cfg.NatsConfig.Offset
+
+	return epNats.NewNatsDriver(&epNats.Config{
+		URL:                     cfg.NatsConfig.URL,
+		ConsumerGroupName:       cfg.NatsConfig.ConsumerGroupName + "-retry",
+		ConsumerAutoOffsetReset: &offset,
+	})
+}
+
 // natsProducer mirrors kafkaProducer: a Produce closure bound to one subject.
 func natsProducer(ctx context.Context, driver drivers.Driver[*epNats.Message], subject string) func(ctx context.Context, value []byte) error {
 	return func(ctx context.Context, value []byte) error {
