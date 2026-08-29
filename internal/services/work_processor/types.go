@@ -35,8 +35,17 @@ type Schema struct {
 	Ranking       *int     `json:"ranking"`
 	Members       *int     `json:"members"`
 	Favorites     *int     `json:"favorites"`
-	CreatedAt     *int64   `json:"created_at"`
-	UpdatedAt     *int64   `json:"updated_at"`
+	// Strings, not epoch micros. work.created_at is timestamptz, which Debezium
+	// sends as io.debezium.time.ZonedTimestamp -- "2026-08-29T21:14:47.291952Z".
+	// Only a plain `timestamp` column arrives as an int64, which is what the
+	// anime_seasons processor this was modelled on happens to have.
+	//
+	// Neither is read: parseToEntity stamps time.Now(), matching the other
+	// processors, because these record when this store learned of the change.
+	// They are declared so the payload unmarshals at all -- an int64 here made
+	// every work event fail on decode and killed the consumer.
+	CreatedAt *string `json:"created_at"`
+	UpdatedAt *string `json:"updated_at"`
 }
 
 type Source struct {
