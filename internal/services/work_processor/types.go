@@ -63,6 +63,13 @@ type Source struct {
 	Xmin      interface{} `json:"xmin"`
 }
 
+// ProducerPayload is what goes onto the search subject. The consumer keys off
+// Action, so a delete carries the row as it last was rather than nothing.
+type ProducerPayload struct {
+	Action Action  `json:"action"`
+	Data   *Schema `json:"data"`
+}
+
 type Payload struct {
 	Before *Schema `json:"before"`
 	After  *Schema `json:"after"`

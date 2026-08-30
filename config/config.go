@@ -67,6 +67,17 @@ type NatsConfig struct {
 	// over them and the driver creates one per subject as needed.
 	ProducerSubject string `default:"image-sync" env:"NATSPRODUCERSUBJECT"`
 	AlgoliaSubject  string `default:"algolia-sync" env:"NATSALGOLIASUBJECT"`
+	// Works are indexed separately from anime, so they get their own subject
+	// rather than sharing AlgoliaSubject with a type discriminator. The two
+	// records have almost no fields in common -- a work has volumes, chapters,
+	// authors and a serialization; an anime has episodes, studios and a
+	// broadcast -- so one index would be half-empty in both directions and
+	// every anime search would have to filter manga out.
+	//
+	// A distinct default rather than reusing AlgoliaSubject: if this were left
+	// to an environment variable and that variable went missing, works would
+	// publish onto the anime subject and quietly corrupt the anime index.
+	AlgoliaWorkSubject string `default:"algolia-sync-work" env:"NATSALGOLIAWORKSUBJECT"`
 }
 
 func LoadConfigOrPanic() Config {

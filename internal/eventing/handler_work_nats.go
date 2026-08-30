@@ -22,10 +22,10 @@ import (
 // over. Nothing has ever carried works over Kafka, so a second entry point
 // would be dead code written for a transport already retired.
 //
-// It publishes covers to image-sync and nothing else. Works are not in the
-// search index, so there is no algolia leg -- but their covers do have to reach
-// the CDN, because the scraper stores MyAnimeList's own URL and a page whose art
-// is the point should not depend on an external host to render.
+// It publishes on two subjects: covers to image-sync, because the scraper
+// stores MyAnimeList's own URL and a page whose art is the point should not
+// depend on an external host to render, and the record itself to the works
+// search index, which is separate from the anime one.
 func EventingWorkNats() error {
 	cfg := config.LoadConfigOrPanic()
 	ctx := context.Background()
@@ -77,6 +77,7 @@ func EventingWorkNats() error {
 		work_processor.Options{NoErrorOnDelete: true},
 		database,
 		natsProducer(ctx, producerDriver, cfg.NatsConfig.ProducerSubject),
+		natsProducer(ctx, producerDriver, cfg.NatsConfig.AlgoliaWorkSubject),
 	)
 
 	retrySubject := cfg.NatsConfig.Subject + "-retry"
