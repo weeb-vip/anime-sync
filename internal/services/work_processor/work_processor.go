@@ -2,6 +2,7 @@ package work_processor
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/ThatCatDev/ep/v2/event"
@@ -19,24 +20,59 @@ type Options struct {
 // nothing here reads DriverMessage, RawData or Headers, only Payload, which the
 // transform middleware has already filled in.
 //
-// No producer. The other CDC processors republish to the image and algolia
-// subjects; a work has no cover to fetch through image-sync and is not in the
-// search index, so there is nothing downstream to notify. Adding an empty
-// producer would only be somewhere for a future mistake to hide.
+// One producer, not two. Works go to image-sync so their covers reach the CDN
+// like every other image in the product -- the scraper stores MyAnimeList's own
+// URL, and serving that directly would put an external host in the hot path of
+// a page whose art is the point. Nothing goes to algolia: works are not in the
+// search index.
 type WorkProcessor[DM any] interface {
 	Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error)
 }
 
 type WorkProcessorImpl[DM any] struct {
-	Repository work.WorkRepositoryImpl
-	Options    Options
+	Repository    work.WorkRepositoryImpl
+	Options       Options
+	ImageProducer func(ctx context.Context, value []byte) error
 }
 
-func NewWorkProcessor[DM any](opt Options, database *db.DB) WorkProcessor[DM] {
+func NewWorkProcessor[DM any](opt Options, database *db.DB, imageProducer func(ctx context.Context, value []byte) error) WorkProcessor[DM] {
 	return &WorkProcessorImpl[DM]{
-		Repository: work.NewWorkRepository(database),
-		Options:    opt,
+		Repository:    work.NewWorkRepository(database),
+		Options:       opt,
+		ImageProducer: imageProducer,
 	}
+}
+
+// publishCover asks image-sync to fetch this work's cover onto the CDN.
+//
+// A work with no image is the ordinary case for a sparse MyAnimeList entry, not
+// a failure, so it is skipped rather than published with an empty URL -- which
+// image-sync would accept and then fail to fetch.
+func (p *WorkProcessorImpl[DM]) publishCover(ctx context.Context, data Schema) error {
+	if p.ImageProducer == nil || data.ImageUrl == nil || *data.ImageUrl == "" {
+		return nil
+	}
+
+	title := ""
+	if data.TitleEn != nil {
+		title = *data.TitleEn
+	} else if data.TitleJp != nil {
+		title = *data.TitleJp
+	}
+
+	encoded, err := json.Marshal(&ImagePayload{
+		Data: ImageSchema{
+			ID:   data.ID,
+			Name: title,
+			URL:  *data.ImageUrl,
+			Type: DataTypeWork,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return p.ImageProducer(ctx, encoded)
 }
 
 func (p *WorkProcessorImpl[DM]) Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error) {
@@ -52,6 +88,11 @@ func (p *WorkProcessorImpl[DM]) Process(ctx context.Context, data event.Event[DM
 		newWork := p.parseToEntity(*payload.After)
 		if err := p.Repository.Upsert(newWork); err != nil {
 			log.Error("Error upserting work", zap.String("id", payload.After.ID), zap.Error(err))
+			return data, err
+		}
+
+		if err := p.publishCover(ctx, *payload.After); err != nil {
+			log.Error("Error sending work cover to image-sync", zap.String("id", payload.After.ID), zap.Error(err))
 			return data, err
 		}
 
