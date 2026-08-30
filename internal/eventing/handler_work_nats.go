@@ -22,10 +22,10 @@ import (
 // over. Nothing has ever carried works over Kafka, so a second entry point
 // would be dead code written for a transport already retired.
 //
-// Unlike its siblings this publishes nothing. The other CDC processors
-// republish to the image and algolia subjects; a work has no cover fetched
-// through image-sync and is not in the search index, so there is no producer
-// driver here at all.
+// It publishes covers to image-sync and nothing else. Works are not in the
+// search index, so there is no algolia leg -- but their covers do have to reach
+// the CDN, because the scraper stores MyAnimeList's own URL and a page whose art
+// is the point should not depend on an external host to render.
 func EventingWorkNats() error {
 	cfg := config.LoadConfigOrPanic()
 	ctx := context.Background()
@@ -60,11 +60,23 @@ func EventingWorkNats() error {
 		}
 	}(retryDriver)
 
+	// Publishing goes through its own driver with no StreamName. image-sync is
+	// outside anime-db.> and owns its own stream, so producing through the CDC
+	// driver would ask JetStream to file the message in Debezium's stream --
+	// which it refuses, leaving the message unacked and redelivering forever.
+	producerDriver := newNatsProducerDriver(cfg)
+	defer func(d drivers.Driver[*epNats.Message]) {
+		if err := d.Close(); err != nil {
+			log.Error("Error closing NATS producer driver", zap.String("error", err.Error()))
+		}
+	}(producerDriver)
+
 	database := db.NewDB(cfg.DBConfig)
 
 	workProcessor := work_processor.NewWorkProcessor[*epNats.Message](
 		work_processor.Options{NoErrorOnDelete: true},
 		database,
+		natsProducer(ctx, producerDriver, cfg.NatsConfig.ProducerSubject),
 	)
 
 	retrySubject := cfg.NatsConfig.Subject + "-retry"

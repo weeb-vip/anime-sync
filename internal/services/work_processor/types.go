@@ -68,3 +68,25 @@ type Payload struct {
 	After  *Schema `json:"after"`
 	Source Source  `json:"source"`
 }
+
+// The image-sync contract. Mirrors anime_processor's copy rather than importing
+// it: they are two producers speaking one wire format, and coupling the packages
+// so one can borrow a struct would make a change to either a change to both.
+type DataType = string
+
+// DataTypeWork files the cover under /works/<id> in the bucket, away from the
+// root where anime posters live.
+const DataTypeWork DataType = "Work"
+
+type ImageSchema struct {
+	// ID is what image-sync keys the object by. Name is sent alongside because
+	// the consumer still falls back to it for messages published before ids.
+	ID   string   `json:"id"`
+	Name string   `json:"name"`
+	URL  string   `json:"url"`
+	Type DataType `json:"type"`
+}
+
+type ImagePayload struct {
+	Data ImageSchema `json:"data"`
+}
