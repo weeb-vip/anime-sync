@@ -20,6 +20,7 @@ type Anime struct {
 	ImageURL      *string      `gorm:"column:image_url;null" json:"image_url"`
 	Synopsis      *string      `gorm:"column:synopsis;null" json:"synopsis"`
 	Episodes      *int         `gorm:"column:episodes;null" json:"episodes"`
+	SeasonNumber  *int         `gorm:"column:season_number;null" json:"season_number"`
 	Status        *string      `gorm:"column:status;null" json:"status"`
 	StartDate     *string      `gorm:"column:start_date;null" json:"start_date"`
 	EndDate       *string      `gorm:"column:end_date;null" json:"end_date"`
