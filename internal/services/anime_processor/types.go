@@ -29,15 +29,19 @@ type Schema struct {
 	SourceWorkID *string `json:"source_work_id"`
 	// UrlSlug is the anime's public URL segment, generated in postgres.
 	// Absent from events emitted before that column existed, hence the pointer.
-	UrlSlug       *string `json:"url_slug"`
-	TitleEn       *string `json:"title_en"`
-	TitleJp       *string `json:"title_jp"`
-	TitleRomaji   *string `json:"title_romaji"`
-	TitleKanji    *string `json:"title_kanji"`
-	Type          *string `json:"type"`
-	ImageUrl      *string `json:"image_url"`
-	Synopsis      *string `json:"synopsis"`
-	Episodes      *int    `json:"episodes"`
+	UrlSlug     *string `json:"url_slug"`
+	TitleEn     *string `json:"title_en"`
+	TitleJp     *string `json:"title_jp"`
+	TitleRomaji *string `json:"title_romaji"`
+	TitleKanji  *string `json:"title_kanji"`
+	Type        *string `json:"type"`
+	ImageUrl    *string `json:"image_url"`
+	Synopsis    *string `json:"synopsis"`
+	Episodes    *int    `json:"episodes"`
+	// Which season of its series this anime is, mirrored onto the scraper's
+	// anime row by a trigger so it rides the existing CDC stream. Null is
+	// unknown; 0 is TheTVDB's specials season.
+	SeasonNumber  *int    `json:"season_number"`
 	Status        *string `json:"status"`
 	Duration      *string `json:"duration"`
 	Broadcast     *string `json:"broadcast"`

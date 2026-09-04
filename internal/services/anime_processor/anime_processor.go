@@ -343,6 +343,7 @@ func (p *AnimeProcessorImpl[DM]) ParseToEntity(ctx context.Context, data Schema)
 	newAnime.ImageURL = data.ImageUrl
 	newAnime.Synopsis = data.Synopsis
 	newAnime.Episodes = data.Episodes
+	newAnime.SeasonNumber = data.SeasonNumber
 	newAnime.Status = data.Status
 	newAnime.StartDate = animeStartDate
 	newAnime.EndDate = animeEndDate
